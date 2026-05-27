@@ -2,25 +2,18 @@
 """
 🧬 Soul Archive -- AI Self-Improvement Engine (soul_reflect.py)
 
-AI 自我反思、自我批评、自我学习引擎。
-记录 AI 的工作经验、错误教训和行为模式，实现持续改进。
+AI 自我反思、自我批评、自我学习引擎（写入侧）。
+查询/召回/预警/蒸馏 等"主动智能体记忆"能力请使用 soul_agent_memory.py。
+
+v3.0：移除加密层，全部明文 JSON。
 
 默认数据目录：~/.skills_data/soul-archive/agent/
 
 Usage:
-  # 自我反思：记录一次工作经历
   python3 soul_reflect.py --mode reflect --input "<反思内容>"
-
-  # 自我批评：记录一次错误和修正
   python3 soul_reflect.py --mode critique --input "<批评内容>"
-
-  # 自我学习：从经验中提取模式
   python3 soul_reflect.py --mode learn --input "<学习内容>"
-
-  # 查看状态
   python3 soul_reflect.py --mode status
-
-  # 查看模式库
   python3 soul_reflect.py --mode patterns
 
 Works on: macOS, Linux, Windows
@@ -32,70 +25,43 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-# ============================================================
-# Data protection support (optional)
-# ============================================================
-
-def _try_import_crypto():
-    """Try to import soul_crypto module."""
-    try:
-        sys.path.insert(0, str(Path(__file__).parent))
-        from soul_crypto import get_crypto_from_config
-        return get_crypto_from_config
-    except ImportError:
-        return None
+sys.path.insert(0, str(Path(__file__).parent))
 
 
-def load_json(path: Path, default=None, crypto=None):
-    """Load JSON file, return default if not exists. Supports sealed files."""
+def load_json(path: Path, default=None):
     if path.exists():
-        if crypto and hasattr(crypto, 'unseal_file'):
-            try:
-                return crypto.unseal_file(path)
-            except Exception:
-                pass
-        raw = path.read_text(encoding='utf-8')
-        return json.loads(raw)
+        try:
+            return json.loads(path.read_text(encoding='utf-8'))
+        except json.JSONDecodeError:
+            pass
     return default if default is not None else {}
 
 
-def save_json(path: Path, data: dict, crypto=None):
-    """Save JSON file, supports privacy protection."""
+def save_json(path: Path, data: dict):
     path.parent.mkdir(parents=True, exist_ok=True)
-    if crypto and hasattr(crypto, 'seal_file_save'):
-        crypto.seal_file_save(path, data)
-    else:
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def append_jsonl(path: Path, entry: dict, crypto=None):
-    """Append a JSON line to a JSONL file."""
+def append_jsonl(path: Path, entry: dict):
     path.parent.mkdir(parents=True, exist_ok=True)
-    if crypto and hasattr(crypto, 'append_sealed_record'):
-        crypto.append_sealed_record(path, entry)
-    else:
-        line = json.dumps(entry, ensure_ascii=False)
-        with open(path, 'a', encoding='utf-8') as f:
-            f.write(line + '\n')
+    with open(path, 'a', encoding='utf-8') as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + '\n')
 
 
-def read_jsonl(path: Path, crypto=None) -> list:
-    """Read all lines from a JSONL file."""
+def read_jsonl(path: Path) -> list:
     if not path.exists():
         return []
     entries = []
-    if crypto and hasattr(crypto, 'read_sealed_records'):
-        return crypto.read_sealed_records(path)
     with open(path, 'r', encoding='utf-8') as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    entries.append(json.loads(line))
-                except json.JSONDecodeError:
-                    continue
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                entries.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
     return entries
 
 
@@ -108,7 +74,7 @@ def today_str() -> str:
 
 
 # ============================================================
-# ReflectionBuilder -- 构建反思/批评/学习结果
+# ReflectionBuilder
 # ============================================================
 
 class ReflectionBuilder:
@@ -123,16 +89,10 @@ class ReflectionBuilder:
             "summary": ""
         }
 
-    # --- 自我反思 ---
     def add_reflection(self, task: str, outcome: str = "success",
                        went_well: list = None, went_wrong: list = None,
                        lesson: str = None):
-        """Record a self-reflection after completing a task."""
-        entry = {
-            "timestamp": now_iso(),
-            "task": task,
-            "outcome": outcome,
-        }
+        entry = {"timestamp": now_iso(), "task": task, "outcome": outcome}
         if went_well:
             entry["what_went_well"] = went_well
         if went_wrong:
@@ -142,12 +102,10 @@ class ReflectionBuilder:
         self.result["reflections"].append(entry)
         return self
 
-    # --- 自我批评 ---
     def add_critique(self, trigger: str, user_said: str,
                      what_i_did_wrong: str, root_cause: str,
                      correction: str, severity: str = "medium",
                      pattern_id: str = None):
-        """Record a self-critique when user corrects AI behavior."""
         entry = {
             "timestamp": now_iso(),
             "trigger": trigger,
@@ -162,29 +120,27 @@ class ReflectionBuilder:
         self.result["critiques"].append(entry)
         return self
 
-    # --- 自我学习（模式） ---
     def add_pattern(self, pattern_id: str, name: str, pattern: str,
                     source: str = "self_reflection", confidence: float = 0.8,
-                    category: str = "general"):
-        """Add or update a behavioral pattern."""
-        self.result["patterns"][pattern_id] = {
+                    category: str = "general", tags: list = None):
+        entry = {
             "id": pattern_id,
             "name": name,
             "pattern": pattern,
             "source": source,
             "confidence": confidence,
             "category": category,
+            "tags": tags or [],
             "applications": 0,
             "created": today_str(),
             "last_applied": today_str()
         }
+        self.result["patterns"][pattern_id] = entry
         return self
 
-    # --- 工作经历 ---
     def add_episode(self, task: str, skill_used: str = None,
                     outcome: str = "success", key_insight: str = None,
                     user_feedback: str = None):
-        """Record a specific work episode."""
         entry = {
             "timestamp": now_iso(),
             "date": today_str(),
@@ -209,60 +165,37 @@ class ReflectionBuilder:
 
 
 # ============================================================
-# AgentMemory -- AI 自我改进记忆管理
+# AgentMemory（写入与基础读取，主动召回能力见 soul_agent_memory.py）
 # ============================================================
 
 class AgentMemory:
     """Manages the agent/ directory for AI self-improvement."""
 
-    def __init__(self, soul_dir: str or Path, crypto=None):
+    def __init__(self, soul_dir):
         self.soul_dir = Path(soul_dir)
         self.agent_dir = self.soul_dir / "agent"
-        self.crypto = crypto
-
-        # Ensure directories exist
         (self.agent_dir / "episodes").mkdir(parents=True, exist_ok=True)
-
-    def init_crypto_from_config(self, password: str = None):
-        """Initialize privacy protection from config.json."""
-        try:
-            sys.path.insert(0, str(Path(__file__).parent))
-            from soul_crypto import ensure_privacy_state, PrivacyProtectionError
-        except ImportError:
-            return
-        config = load_json(self.soul_dir / "config.json", {})
-        try:
-            self.crypto = ensure_privacy_state(self.soul_dir, config, password)
-        except PrivacyProtectionError as e:
-            print(f"❌ {e}")
-            sys.exit(1)
 
     # --- Patterns ---
     def load_patterns(self) -> dict:
-        data = load_json(self.agent_dir / "patterns.json",
-                         {"patterns": {}}, self.crypto)
+        data = load_json(self.agent_dir / "patterns.json", {"patterns": {}})
         return data.get("patterns", {})
 
     def save_patterns(self, patterns: dict):
-        save_json(self.agent_dir / "patterns.json",
-                  {"patterns": patterns,
-                   "_meta": {"last_updated": now_iso(),
-                             "total_patterns": len(patterns)}},
-                  self.crypto)
+        save_json(self.agent_dir / "patterns.json", {
+            "patterns": patterns,
+            "_meta": {"last_updated": now_iso(), "total_patterns": len(patterns)}
+        })
 
     def update_pattern(self, pattern_id: str, pattern_data: dict):
-        """Add or update a single pattern."""
         patterns = self.load_patterns()
         if pattern_id in patterns:
-            # Update existing: bump applications, update last_applied
             existing = patterns[pattern_id]
             existing["applications"] = existing.get("applications", 0) + 1
             existing["last_applied"] = today_str()
-            # Update confidence if new is higher
             if pattern_data.get("confidence", 0) > existing.get("confidence", 0):
                 existing["confidence"] = pattern_data["confidence"]
-            # Merge other fields
-            for k in ["name", "pattern", "category"]:
+            for k in ["name", "pattern", "category", "tags"]:
                 if k in pattern_data:
                     existing[k] = pattern_data[k]
         else:
@@ -271,80 +204,67 @@ class AgentMemory:
 
     # --- Reflections ---
     def add_reflection(self, entry: dict):
-        append_jsonl(self.agent_dir / "reflections.jsonl", entry, self.crypto)
+        append_jsonl(self.agent_dir / "reflections.jsonl", entry)
 
     def load_reflections(self, limit: int = 20) -> list:
-        entries = read_jsonl(self.agent_dir / "reflections.jsonl", self.crypto)
-        return entries[-limit:]
+        return read_jsonl(self.agent_dir / "reflections.jsonl")[-limit:]
 
-    # --- Corrections/Critiques ---
+    # --- Corrections ---
     def add_correction(self, entry: dict):
-        append_jsonl(self.agent_dir / "corrections.jsonl", entry, self.crypto)
+        append_jsonl(self.agent_dir / "corrections.jsonl", entry)
 
     def load_corrections(self, limit: int = 20) -> list:
-        entries = read_jsonl(self.agent_dir / "corrections.jsonl", self.crypto)
-        return entries[-limit:]
+        return read_jsonl(self.agent_dir / "corrections.jsonl")[-limit:]
 
     # --- Episodes ---
     def add_episode(self, entry: dict):
         date = entry.get("date", today_str())
         path = self.agent_dir / "episodes" / f"{date}.jsonl"
-        append_jsonl(path, entry, self.crypto)
+        append_jsonl(path, entry)
 
     def load_episodes(self, date: str = None, limit: int = 20) -> list:
         if date:
             path = self.agent_dir / "episodes" / f"{date}.jsonl"
-            return read_jsonl(path, self.crypto)[-limit:]
-        # Load all recent
+            return read_jsonl(path)[-limit:]
         episode_dir = self.agent_dir / "episodes"
         if not episode_dir.exists():
             return []
         files = sorted(episode_dir.glob("*.jsonl"), reverse=True)
         entries = []
         for f in files:
-            entries.extend(read_jsonl(f, self.crypto))
+            entries.extend(read_jsonl(f))
             if len(entries) >= limit:
                 break
         return entries[-limit:]
 
     # --- Save extraction result ---
     def save_extraction(self, result: dict) -> list:
-        """Save a full extraction result from ReflectionBuilder."""
         changes = []
-
-        # Save reflections
         for r in result.get("reflections", []):
             self.add_reflection(r)
             changes.append(f"reflection: {r.get('task', '?')}")
-
-        # Save critiques as corrections
         for c in result.get("critiques", []):
             self.add_correction(c)
             changes.append(f"critique: {c.get('what_i_did_wrong', '?')[:50]}")
-
-        # Save/update patterns
         for pid, pdata in result.get("patterns", {}).items():
             self.update_pattern(pid, pdata)
             changes.append(f"pattern: {pid}")
-
-        # Save episodes
         for e in result.get("episodes", []):
             self.add_episode(e)
             changes.append(f"episode: {e.get('task', '?')[:50]}")
-
         return changes
 
     # --- Status ---
     def get_status(self) -> dict:
         patterns = self.load_patterns()
-        reflections = read_jsonl(self.agent_dir / "reflections.jsonl", self.crypto)
-        corrections = read_jsonl(self.agent_dir / "corrections.jsonl", self.crypto)
+        reflections = read_jsonl(self.agent_dir / "reflections.jsonl")
+        corrections = read_jsonl(self.agent_dir / "corrections.jsonl")
 
         episode_count = 0
         episode_dir = self.agent_dir / "episodes"
         if episode_dir.exists():
             for f in episode_dir.glob("*.jsonl"):
-                episode_count += len(read_jsonl(f, self.crypto))
+                episode_count += len(read_jsonl(f))
 
         return {
             "total_patterns": len(patterns),
@@ -373,29 +293,9 @@ def main():
                         help="工作模式")
     parser.add_argument("--input", type=str, default=None,
                         help="输入内容（反思/批评/学习的文本）")
-    parser.add_argument("--access-key", type=str, default=None,
-                        help="访问密钥")
     args = parser.parse_args()
 
-    import os
-    password = args.access_key or os.environ.get("SOUL_PASSWORD")
-
     agent = AgentMemory(args.soul_dir)
-    config_path = args.soul_dir / "config.json"
-    if config_path.exists():
-        import json
-        config = json.loads(config_path.read_text())
-        if config.get("encryption") and not password:
-            try:
-                import getpass
-                password = getpass.getpass("🔐 灵魂存档已启用数据保护，请输入访问密钥: ")
-            except Exception:
-                password = None
-            if not password:
-                print("❌ 需要访问密钥才能读取受保护的灵魂存档。请设置 SOUL_ACCESS_KEY 环境变量或使用 --access-key 参数。")
-                return
-    if password:
-        agent.init_crypto_from_config(password=password)
 
     if args.mode == "status":
         status = agent.get_status()
@@ -425,6 +325,8 @@ def main():
             print(f"    置信度：{p.get('confidence', 0):.0%}")
             print(f"    应用次数：{p.get('applications', 0)}")
             print(f"    来源：{p.get('source', '?')}")
+            if p.get("tags"):
+                print(f"    标签：{', '.join(p['tags'])}")
 
     elif args.mode in ("reflect", "critique", "learn"):
         if not args.input:
@@ -444,9 +346,12 @@ def main():
         print("    went_well=['全面扫描了路径'], went_wrong=['遗漏了一个目录'],")
         print("    lesson='迁移前应全面扫描所有目录')")
         print("builder.add_pattern('pat-thorough-scan', '全面扫描',")
-        print("    pattern='执行迁移/清理操作前全面扫描目标范围')")
+        print("    pattern='执行迁移/清理操作前全面扫描目标范围',")
+        print("    tags=['migration', 'safety'])")
         print("changes = agent.save_extraction(builder.build())")
         print("```")
+        print()
+        print("💡 想要主动召回相关模式/失败预警，请使用 soul_agent_memory.py")
 
 
 if __name__ == "__main__":

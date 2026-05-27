@@ -1,28 +1,36 @@
 #!/usr/bin/env python3
 """
 🧬 灵魂提取器（Soul Extractor）
-从对话文本中分析并提取用户的人格信息，更新灵魂存档。
+
+v3.0 关键变化：
+- 移除 voice 维度
+- 移除 relationships 维度（AI 对话中难以采集）
+- 移除加密层（全部明文 JSON）
+- 新增 workflow 维度（工具/技术栈/硬规则/输出格式偏好/反感的事）
+- 新增 aspirations 维度（长期目标/正在做/想学/认知盲区）
+- 7 维权重重新分配：identity 8 / personality 18 / language 20 /
+  knowledge 14 / memory 18 / workflow 15 / aspirations 7
+- P1-4: 写入前做相似度查重，>=0.85 则合并/置信度+1，避免重复条目
 
 用法：
   python3 soul_extract.py --input "对话内容"
+  python3 soul_extract.py --mode status
 
-默认数据目录：~/.skills_data/soul-archive/（通过 Path.home() 解析，跨平台兼容）
-仅接受纯文本输入，不接受文件路径。
+默认数据目录：~/.skills_data/soul-archive/
 """
 
 import json
-import os
 import sys
 import argparse
 from datetime import datetime, timezone
 from pathlib import Path
 
 # ============================================================
-# 数据结构定义
+# Default data structures
 # ============================================================
 
 DEFAULT_PROFILE = {
-    "soul_version": "1.0",
+    "soul_version": "3.0",
     "created_at": None,
     "last_updated": None,
     "total_conversations": 0,
@@ -34,167 +42,125 @@ DEFAULT_PROFILE = {
         "language_style": 0.0,
         "knowledge": 0.0,
         "memory": 0.0,
-        "relationships": 0.0,
-        "voice": 0.0
+        "workflow": 0.0,
+        "aspirations": 0.0
     }
 }
 
 DEFAULT_BASIC_INFO = {
-    "name": None,
-    "nickname": None,
-    "age": None,
-    "birth_year": None,
-    "gender": None,
-    "location": None,
-    "hometown": None,
-    "occupation": None,
-    "company": None,
-    "education": None,
-    "languages": [],
-    "hobbies": [],
-    "self_description": None,
-    "life_motto": None,
-    # === 生活习惯与偏好 ===
-    "daily_routine": None,          # 日常作息描述
-    "sleep_schedule": None,         # 作息时间（早起/夜猫子）
-    "food_preferences": [],         # 饮食偏好
-    "food_dislikes": [],            # 饮食禁忌/不喜欢的
-    "music_taste": [],              # 音乐品味
-    "movie_taste": [],              # 电影/剧集品味
-    "book_taste": [],               # 阅读偏好
-    "travel_preferences": None,     # 旅行风格
-    "pet_preference": None,         # 宠物
-    "aesthetic_style": None,        # 审美风格（穿衣/家居/设计偏好）
-    "spending_style": None,         # 消费风格（节俭/享受型/理性消费）
-    # === 数字身份 ===
-    "online_personas": [],          # 网名/ID 风格
-    "favorite_apps": [],            # 常用 App
-    "social_platforms": [],         # 活跃的社交平台
-    "digital_habits": None,         # 上网习惯描述
-    "tech_proficiency": None,       # 技术水平（小白/普通/极客）
+    "name": None, "nickname": None, "age": None, "birth_year": None,
+    "gender": None, "location": None, "hometown": None,
+    "occupation": None, "company": None, "education": None,
+    "languages": [], "hobbies": [], "self_description": None, "life_motto": None,
+    "daily_routine": None, "sleep_schedule": None,
+    "food_preferences": [], "food_dislikes": [],
+    "music_taste": [], "movie_taste": [], "book_taste": [],
+    "travel_preferences": None, "pet_preference": None,
+    "aesthetic_style": None, "spending_style": None,
+    "online_personas": [], "favorite_apps": [], "social_platforms": [],
+    "digital_habits": None, "tech_proficiency": None,
     "_meta": {}
 }
 
 DEFAULT_PERSONALITY = {
     "mbti": None,
     "big_five": {
-        "openness": None,
-        "conscientiousness": None,
-        "extraversion": None,
-        "agreeableness": None,
-        "neuroticism": None
+        "openness": None, "conscientiousness": None,
+        "extraversion": None, "agreeableness": None, "neuroticism": None
     },
-    "traits": [],
-    "values": [],
-    "decision_style": None,
-    "communication_preference": None,
-    "strengths": [],
-    "weaknesses": [],
-    # === 行为模式 ===
-    "risk_tolerance": None,         # 风险偏好（保守/适度/冒险）
-    "procrastination_level": None,  # 拖延程度
-    "perfectionism_level": None,    # 完美主义程度
-    "planning_style": None,         # 计划性（随性/弹性/严格计划）
-    "learning_style": None,         # 学习方式（实践/阅读/视频/讨论）
-    "work_style": None,             # 工作风格（独狼/协作/领导）
-    # === 社交风格 ===
-    "social_energy": None,          # 社交能量（独处充电/社交充电/平衡）
-    "group_role": None,             # 在群体中的角色（领导者/跟随者/调解者/观察者）
-    "trust_building": None,         # 建立信任的方式（快速/谨慎/选择性）
-    "conflict_approach": None,      # 面对冲突的方式（回避/直面/调解）
-    # === 压力与成长 ===
-    "stress_response": None,        # 压力反应模式
-    "motivation_drivers": [],       # 什么驱动TA（成就/金钱/认可/自由/好奇心）
-    "growth_areas": [],             # 自认为需要提升的方面
+    "traits": [], "values": [],
+    "decision_style": None, "communication_preference": None,
+    "strengths": [], "weaknesses": [],
+    "risk_tolerance": None, "procrastination_level": None,
+    "perfectionism_level": None, "planning_style": None,
+    "learning_style": None, "work_style": None,
+    "social_energy": None, "group_role": None,
+    "trust_building": None, "conflict_approach": None,
+    "stress_response": None, "motivation_drivers": [], "growth_areas": [],
     "_meta": {}
 }
 
 DEFAULT_LANGUAGE = {
-    "catchphrases": [],
-    "sentence_patterns": [],
-    "preferred_words": [],
-    "avoided_words": [],
-    "emoji_usage": {
-        "frequency": "unknown",
-        "favorites": []
-    },
+    "catchphrases": [], "sentence_patterns": [],
+    "preferred_words": [], "avoided_words": [],
+    "emoji_usage": {"frequency": "unknown", "favorites": []},
     "punctuation_habits": {},
-    "formality_level": None,
-    "verbosity": None,
-    "humor_style": None,
-    "response_length_preference": None,
-    "thinking_expression": None,
-    "examples": [],
-    # === 语言深度指纹 ===
-    "dialect_features": [],         # 方言/地域用语特征
-    "filler_words": [],             # 语气词/填充词（嗯、啊、那个、就是说）
-    "persuasion_style": None,       # 说服别人时的方式（摆事实/讲道理/打感情牌/用类比）
-    "storytelling_style": None,     # 讲故事的方式（时间线/倒叙/先结论）
-    "question_style": None,         # 提问风格（反问/开放式/选择式）
-    "agreement_expressions": [],    # 表示同意时的说法
-    "disagreement_expressions": [], # 表示不同意时的说法
-    "greeting_style": None,         # 打招呼方式
-    "farewell_style": None,         # 告别方式
-    "typing_habits": None,          # 打字习惯（如喜欢连续短句 vs 长段落）
+    "formality_level": None, "verbosity": None,
+    "humor_style": None, "response_length_preference": None,
+    "thinking_expression": None, "examples": [],
+    "dialect_features": [], "filler_words": [],
+    "persuasion_style": None, "storytelling_style": None,
+    "question_style": None, "agreement_expressions": [],
+    "disagreement_expressions": [],
+    "greeting_style": None, "farewell_style": None,
+    "typing_habits": None,
     "_meta": {}
 }
 
 DEFAULT_COMMUNICATION = {
-    "directness": None,
-    "logic_vs_emotion": None,
-    "detail_level": None,
-    "listening_style": None,
-    "conflict_style": None,
-    "encouragement_style": None,
-    "criticism_style": None,
-    "_meta": {}
+    "directness": None, "logic_vs_emotion": None,
+    "detail_level": None, "listening_style": None,
+    "conflict_style": None, "encouragement_style": None,
+    "criticism_style": None, "_meta": {}
 }
 
-DEFAULT_TOPICS = {
-    "topics": [],
-    "_meta": {}
-}
+DEFAULT_TOPICS = {"topics": [], "_meta": {}}
 
 DEFAULT_KNOWLEDGE = {
-    "domains": [],
-    "skills": [],
-    "expertise_level": {},
+    "domains": [], "skills": [], "expertise_level": {},
+    "belief_frameworks": [],
     "_meta": {}
 }
 
 DEFAULT_EMOTIONAL_PATTERNS = {
     "triggers": {
-        "joy": [],
-        "anger": [],
-        "sadness": [],
-        "anxiety": [],
-        "excitement": [],
-        "nostalgia": [],
-        "pride": [],            # 自豪感
-        "gratitude": [],        # 感恩
-        "frustration": [],      # 挫败感
-        "curiosity": [],        # 好奇心被激发
-        "peace": [],            # 内心平静
-        "guilt": []             # 愧疚
+        "joy": [], "anger": [], "sadness": [], "anxiety": [],
+        "excitement": [], "nostalgia": [], "pride": [], "gratitude": [],
+        "frustration": [], "curiosity": [], "peace": [], "guilt": []
     },
-    "expression_style": None,
-    "emotional_range": None,       # 情绪波动范围（平稳/适中/起伏大）
-    "emotional_awareness": None,   # 情绪自我觉察能力
-    "empathy_level": None,         # 共情能力（低/中/高）
-    "coping_mechanisms": [],
-    "comfort_activities": [],      # 心情不好时会做什么
-    "celebration_style": None,     # 开心时的表现方式
+    "expression_style": None, "emotional_range": None,
+    "emotional_awareness": None, "empathy_level": None,
+    "coping_mechanisms": [], "comfort_activities": [],
+    "celebration_style": None, "_meta": {}
+}
+
+# v3.0 ⭐ 新增：Workflow（procedural memory）
+DEFAULT_WORKFLOW = {
+    "tools": {
+        "ide": [], "terminal": [], "ai_tools": [],
+        "vcs": [], "doc_systems": [], "communication": []
+    },
+    "tech_stack": {
+        "languages": [], "frameworks": [], "platforms": []
+    },
+    "hard_rules": [],
+    "collab_conventions": [],
+    "cli_habits": [],
+    "output_preferences": {
+        "preferred_format": None,
+        "preferred_length": None,
+        "preferred_tone": None,
+        "structure_first": None
+    },
+    "pet_peeves": [],
     "_meta": {}
 }
 
-DEFAULT_PEOPLE = {
-    "people": [],
+# v3.0 ⭐ 新增：Aspirations
+DEFAULT_ASPIRATIONS = {
+    "long_term_goals": [],
+    "active_projects": [],
+    "identity_aspirations": [],
+    "skills_to_learn": [],
+    "knowledge_gaps": [],
     "_meta": {}
 }
 
 DEFAULT_CONFIG = {
     "privacy_level": "standard",
-    "auto_extract": False,
+    "auto_extract": True,
+    "auto_reflect": True,
+    "auto_context_inject": True,
     "extract_dimensions": {
         "identity": True,
         "personality": True,
@@ -202,94 +168,141 @@ DEFAULT_CONFIG = {
         "knowledge": True,
         "episodic_memory": True,
         "emotional_patterns": True,
-        "relationships": False,
-        "voice": False
+        "workflow": True,
+        "aspirations": True
+    },
+    "agent_self_improvement": {
+        "enabled": True,
+        "auto_reflect_on_completion": True,
+        "auto_critique_on_correction": True,
+        "pattern_extraction": True,
+        "recall_on_task_start": True,
+        "warn_on_failure_pattern_match": True,
+        "auto_distill_threshold": 5
+    },
+    "deduplication": {
+        "enabled": True,
+        "similarity_threshold": 0.85
     },
     "sensitive_topics_filter": True,
     "require_confirmation_for": ["health", "finance", "intimate_relationships"],
-    "data_retention_days": None,
-    "encryption": False
+    "data_retention_days": None
 }
 
 
 # ============================================================
-# 文件操作工具
+# IO utilities (plaintext only)
 # ============================================================
 
 def ensure_dir(path: Path):
-    """确保目录存在"""
     path.mkdir(parents=True, exist_ok=True)
 
 
-def load_json(path: Path, default=None, crypto=None):
-    """加载 JSON 文件，不存在则返回默认值。支持隐私保护文件透明读取。"""
+def load_json(path: Path, default=None):
     if path.exists():
-        if crypto is not None:
-            try:
-                return crypto.unseal_file(path)
-            except Exception:
-                # unseal_file already handles both sealed and plain files;
-                # if it still fails, the file may be corrupted -- don't try plain read
-                pass
-        # Plain text JSON read
         try:
             with open(path, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except (UnicodeDecodeError, json.JSONDecodeError):
-            # Likely a protected file read without crypto -- return default
             pass
     return default if default is not None else {}
 
 
-def save_json(path: Path, data: dict, crypto=None):
-    """保存 JSON 文件。如果 crypto 不为 None，则保护写入。"""
+def save_json(path: Path, data: dict):
     ensure_dir(path.parent)
-    if crypto is not None:
-        crypto.seal_file_save(path, data)
-    else:
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def append_jsonl(path: Path, record: dict, crypto=None):
-    """追加一行到 JSONL 文件。如果 crypto 不为 None，则保护写入。"""
+def append_jsonl(path: Path, record: dict):
     ensure_dir(path.parent)
-    if crypto is not None:
-        crypto.append_sealed_record(path, record)
-    else:
-        with open(path, 'a', encoding='utf-8') as f:
-            f.write(json.dumps(record, ensure_ascii=False) + '\n')
+    with open(path, 'a', encoding='utf-8') as f:
+        f.write(json.dumps(record, ensure_ascii=False) + '\n')
+
+
+def read_jsonl(path: Path) -> list:
+    if not path.exists():
+        return []
+    entries = []
+    with open(path, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                entries.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+    return entries
 
 
 def now_iso():
-    """当前时间 ISO 格式（UTC）"""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S+00:00")
 
 
 # ============================================================
-# 灵魂存档管理器
+# Similarity-based dedup (v3.0 P1-4)
+# ============================================================
+
+def _similarity(a: str, b: str) -> float:
+    if not a or not b:
+        return 0.0
+    a, b = str(a).strip(), str(b).strip()
+    if a == b:
+        return 1.0
+
+    def _bigrams(s):
+        s = s.lower()
+        return set(s[i:i + 2] for i in range(len(s) - 1)) if len(s) >= 2 else {s}
+
+    sa, sb = _bigrams(a), _bigrams(b)
+    if not sa or not sb:
+        return 0.0
+    inter = len(sa & sb)
+    union = len(sa | sb)
+    return inter / union if union > 0 else 0.0
+
+
+def _dedup_merge_list(existing: list, candidates: list, threshold: float = 0.85) -> tuple:
+    if not candidates:
+        return existing, 0
+    out = list(existing)
+    added = 0
+    for cand in candidates:
+        cand_str = str(cand)
+        if any(str(e) == cand_str for e in out):
+            continue
+        if any(_similarity(str(e), cand_str) >= threshold for e in out):
+            continue
+        out.append(cand)
+        added += 1
+    return out, added
+
+
+# ============================================================
+# Soul Archive
 # ============================================================
 
 class SoulArchive:
-    """灵魂存档管理器 ---- 管理 .skills_data/soul-archive/ 目录的读写，支持数据保护"""
+    """7-axis archive: identity / personality / language / knowledge /
+    memory / workflow / aspirations"""
 
-    def __init__(self, soul_dir: str, crypto=None):
+    def __init__(self, soul_dir: str):
         self.root = Path(soul_dir)
         self.profile_path = self.root / "profile.json"
         self.config_path = self.root / "config.json"
         self.changelog_path = self.root / "soul_changelog.jsonl"
-        self.crypto = crypto  # SoulCrypto instance or None
 
-        # 数据文件路径
         self.paths = {
-            "basic_info": self.root / "identity" / "basic_info.json",
+            "basic_info":  self.root / "identity" / "basic_info.json",
             "personality": self.root / "identity" / "personality.json",
-            "language": self.root / "style" / "language.json",
+            "language":    self.root / "style" / "language.json",
             "communication": self.root / "style" / "communication.json",
-            "topics": self.root / "memory" / "semantic" / "topics.json",
-            "knowledge": self.root / "memory" / "semantic" / "knowledge.json",
-            "emotional": self.root / "memory" / "emotional" / "patterns.json",
-            "people": self.root / "relationships" / "people.json",
+            "topics":      self.root / "memory" / "semantic" / "topics.json",
+            "knowledge":   self.root / "memory" / "semantic" / "knowledge.json",
+            "emotional":   self.root / "memory" / "emotional" / "patterns.json",
+            "workflow":    self.root / "workflow" / "preferences.json",
+            "aspirations": self.root / "aspirations.json",
         }
 
     def is_initialized(self) -> bool:
@@ -301,157 +314,155 @@ class SoulArchive:
     def load_config(self) -> dict:
         return load_json(self.config_path, DEFAULT_CONFIG.copy())
 
-    def init_crypto_from_config(self, password: str = None):
-        """Initialize privacy protection based on config and current file state.
-
-        Automatically reconciles the protection state with user configuration.
-        Password is always verified before any data file is accessed.
-        """
-        config = self.load_config()
-        sys.path.insert(0, str(Path(__file__).parent))
-        from soul_crypto import ensure_privacy_state, PrivacyProtectionError
-        try:
-            self.crypto = ensure_privacy_state(self.root, config, password)
-        except PrivacyProtectionError as e:
-            print(f"❌ {e}")
-            sys.exit(1)
+    def _dedup_threshold(self) -> float:
+        cfg = self.load_config().get("deduplication", {})
+        if not cfg.get("enabled", True):
+            return 1.01
+        return float(cfg.get("similarity_threshold", 0.85))
 
     def load_all(self) -> dict:
-        """加载全部灵魂数据"""
-        c = self.crypto
         return {
-            "profile": self.load_profile(),
-            "config": self.load_config(),
-            "basic_info": load_json(self.paths["basic_info"], DEFAULT_BASIC_INFO.copy(), crypto=c),
-            "personality": load_json(self.paths["personality"], DEFAULT_PERSONALITY.copy(), crypto=c),
-            "language": load_json(self.paths["language"], DEFAULT_LANGUAGE.copy(), crypto=c),
-            "communication": load_json(self.paths["communication"], DEFAULT_COMMUNICATION.copy(), crypto=c),
-            "topics": load_json(self.paths["topics"], DEFAULT_TOPICS.copy(), crypto=c),
-            "knowledge": load_json(self.paths["knowledge"], DEFAULT_KNOWLEDGE.copy(), crypto=c),
-            "emotional": load_json(self.paths["emotional"], DEFAULT_EMOTIONAL_PATTERNS.copy(), crypto=c),
-            "people": load_json(self.paths["people"], DEFAULT_PEOPLE.copy(), crypto=c),
+            "profile":       self.load_profile(),
+            "config":        self.load_config(),
+            "basic_info":    load_json(self.paths["basic_info"],  DEFAULT_BASIC_INFO.copy()),
+            "personality":   load_json(self.paths["personality"], DEFAULT_PERSONALITY.copy()),
+            "language":      load_json(self.paths["language"],    DEFAULT_LANGUAGE.copy()),
+            "communication": load_json(self.paths["communication"], DEFAULT_COMMUNICATION.copy()),
+            "topics":        load_json(self.paths["topics"],      DEFAULT_TOPICS.copy()),
+            "knowledge":     load_json(self.paths["knowledge"],   DEFAULT_KNOWLEDGE.copy()),
+            "emotional":     load_json(self.paths["emotional"],   DEFAULT_EMOTIONAL_PATTERNS.copy()),
+            "workflow":      load_json(self.paths["workflow"],    DEFAULT_WORKFLOW.copy()),
+            "aspirations":   load_json(self.paths["aspirations"], DEFAULT_ASPIRATIONS.copy()),
         }
 
     def save_data(self, key: str, data: dict):
-        """保存特定数据文件"""
         if key == "profile":
             save_json(self.profile_path, data)
         elif key == "config":
             save_json(self.config_path, data)
         elif key in self.paths:
-            save_json(self.paths[key], data, crypto=self.crypto)
+            save_json(self.paths[key], data)
+
+    # --------------------------------------------------------
+    # Save extraction
+    # --------------------------------------------------------
 
     def save_extraction(self, extraction: dict):
-        """
-        保存一次提取结果。
-        extraction 格式：
-        {
-            "basic_info": { ... 增量更新字段 ... },
-            "personality": { ... },
-            "language": { ... },
-            "topics": [ { new topic objects } ],
-            "episodic": [ { new episodes } ],
-            "emotional": { ... },
-            "people": [ { new people } ],
-            "summary": "本次提取摘要"
-        }
-        """
         changes = []
         config = self.load_config()
         dims = config.get("extract_dimensions", {})
-        c = self.crypto
+        thr = self._dedup_threshold()
 
-        # 1. 更新身份信息
+        # 1. Identity
         if dims.get("identity", True) and extraction.get("basic_info"):
-            current = load_json(self.paths["basic_info"], DEFAULT_BASIC_INFO.copy(), crypto=c)
-            updated_fields = self._merge_identity(current, extraction["basic_info"])
-            if updated_fields:
-                save_json(self.paths["basic_info"], current, crypto=c)
-                changes.append(f"identity: updated {', '.join(updated_fields)}")
+            current = load_json(self.paths["basic_info"], DEFAULT_BASIC_INFO.copy())
+            updated = self._merge_identity(current, extraction["basic_info"], thr)
+            if updated:
+                save_json(self.paths["basic_info"], current)
+                changes.append(f"identity: updated {', '.join(updated)}")
 
-        # 2. 更新性格特征
+        # 2. Personality
         if dims.get("personality", True) and extraction.get("personality"):
-            current = load_json(self.paths["personality"], DEFAULT_PERSONALITY.copy(), crypto=c)
-            updated_fields = self._merge_personality(current, extraction["personality"])
-            if updated_fields:
-                save_json(self.paths["personality"], current, crypto=c)
-                changes.append(f"personality: updated {', '.join(updated_fields)}")
+            current = load_json(self.paths["personality"], DEFAULT_PERSONALITY.copy())
+            updated = self._merge_personality(current, extraction["personality"], thr)
+            if updated:
+                save_json(self.paths["personality"], current)
+                changes.append(f"personality: updated {', '.join(updated)}")
 
-        # 3. 更新语言风格
+        # 3. Language
         if dims.get("language_style", True) and extraction.get("language"):
-            current = load_json(self.paths["language"], DEFAULT_LANGUAGE.copy(), crypto=c)
-            updated_fields = self._merge_language(current, extraction["language"])
-            if updated_fields:
-                save_json(self.paths["language"], current, crypto=c)
-                changes.append(f"language: updated {', '.join(updated_fields)}")
+            current = load_json(self.paths["language"], DEFAULT_LANGUAGE.copy())
+            updated = self._merge_language(current, extraction["language"], thr)
+            if updated:
+                save_json(self.paths["language"], current)
+                changes.append(f"language: updated {', '.join(updated)}")
 
-        # 4. 更新话题观点
+        # 4. Knowledge & Topics
         if dims.get("knowledge", True) and extraction.get("topics"):
-            current = load_json(self.paths["topics"], DEFAULT_TOPICS.copy(), crypto=c)
-            new_count = self._merge_topics(current, extraction["topics"])
-            if new_count:
-                save_json(self.paths["topics"], current, crypto=c)
-                changes.append(f"topics: added/updated {new_count} topics")
+            current = load_json(self.paths["topics"], DEFAULT_TOPICS.copy())
+            n = self._merge_topics(current, extraction["topics"], thr)
+            if n:
+                save_json(self.paths["topics"], current)
+                changes.append(f"topics: added/updated {n} topics")
+        if dims.get("knowledge", True) and extraction.get("knowledge"):
+            current = load_json(self.paths["knowledge"], DEFAULT_KNOWLEDGE.copy())
+            updated = self._merge_knowledge(current, extraction["knowledge"], thr)
+            if updated:
+                save_json(self.paths["knowledge"], current)
+                changes.append(f"knowledge: updated {', '.join(updated)}")
 
-        # 5. 追加情景记忆
+        # 5. Memory: episodic + emotional
         if dims.get("episodic_memory", True) and extraction.get("episodic"):
             today = datetime.now().strftime("%Y-%m-%d")
             ep_path = self.root / "memory" / "episodic" / f"{today}.jsonl"
+            existing_today = read_jsonl(ep_path)
+            existing_events = [e.get("event", "") for e in existing_today]
+            added = 0
             for episode in extraction["episodic"]:
+                ev = episode.get("event", "")
+                if any(_similarity(ev, x) >= thr for x in existing_events if x):
+                    continue
                 episode["timestamp"] = now_iso()
-                append_jsonl(ep_path, episode, crypto=c)
-            changes.append(f"episodic: added {len(extraction['episodic'])} episodes")
+                append_jsonl(ep_path, episode)
+                existing_events.append(ev)
+                added += 1
+            if added:
+                changes.append(f"episodic: added {added} episodes")
 
-        # 6. 更新情感模式
         if dims.get("emotional_patterns", True) and extraction.get("emotional"):
-            current = load_json(self.paths["emotional"], DEFAULT_EMOTIONAL_PATTERNS.copy(), crypto=c)
-            updated = self._merge_emotional(current, extraction["emotional"])
+            current = load_json(self.paths["emotional"], DEFAULT_EMOTIONAL_PATTERNS.copy())
+            updated = self._merge_emotional(current, extraction["emotional"], thr)
             if updated:
-                save_json(self.paths["emotional"], current, crypto=c)
+                save_json(self.paths["emotional"], current)
                 changes.append(f"emotional: updated {', '.join(updated)}")
 
-        # 7. 更新人际关系
-        if dims.get("relationships", False) and extraction.get("people"):
-            current = load_json(self.paths["people"], DEFAULT_PEOPLE.copy(), crypto=c)
-            new_count = self._merge_people(current, extraction["people"])
-            if new_count:
-                save_json(self.paths["people"], current, crypto=c)
-                changes.append(f"relationships: added/updated {new_count} people")
+        # 6. Workflow ⭐
+        if dims.get("workflow", True) and extraction.get("workflow"):
+            current = load_json(self.paths["workflow"], DEFAULT_WORKFLOW.copy())
+            updated = self._merge_workflow(current, extraction["workflow"], thr)
+            if updated:
+                save_json(self.paths["workflow"], current)
+                changes.append(f"workflow: updated {', '.join(updated)}")
 
-        # 更新 profile
+        # 7. Aspirations ⭐
+        if dims.get("aspirations", True) and extraction.get("aspirations"):
+            current = load_json(self.paths["aspirations"], DEFAULT_ASPIRATIONS.copy())
+            updated = self._merge_aspirations(current, extraction["aspirations"], thr)
+            if updated:
+                save_json(self.paths["aspirations"], current)
+                changes.append(f"aspirations: updated {', '.join(updated)}")
+
+        # Update profile
         if changes:
             profile = self.load_profile()
             profile["last_updated"] = now_iso()
             profile["total_extractions"] = profile.get("total_extractions", 0) + 1
             profile["total_conversations"] = profile.get("total_conversations", 0) + 1
-            # _calc_completeness 内部已调用 _calc_dimension_scores，避免重复计算
             dimensions = self._calc_dimension_scores()
             profile["dimensions"] = dimensions
             profile["completeness_score"] = self._calc_completeness_from_scores(dimensions)
             save_json(self.profile_path, profile)
-
-            # 追加 changelog
             append_jsonl(self.changelog_path, {
                 "timestamp": now_iso(),
                 "extraction_id": profile["total_extractions"],
                 "changes": changes,
                 "summary": extraction.get("summary", ""),
-                "completeness": profile["completeness_score"]
-            }, crypto=c)
-
+                "completeness": profile["completeness_score"],
+                "dimensions": dimensions   # v3.0：快照各维度分数，给"灵魂演变堆叠图"用
+            })
         return changes
 
-    # ---- 合并策略 ----
+    # --------------------------------------------------------
+    # Merge strategies
+    # --------------------------------------------------------
 
-    def _merge_identity(self, current: dict, new_data: dict) -> list:
-        """合并身份信息：只填充空字段或更新低置信度字段"""
+    def _merge_identity(self, current: dict, new_data: dict, thr: float) -> list:
         updated = []
         meta = current.get("_meta", {})
         for key, value in new_data.items():
             if key.startswith("_") or value is None:
                 continue
             if isinstance(value, dict) and "value" in value:
-                # 带置信度的更新
                 new_conf = value.get("confidence", 0.5)
                 old_conf = meta.get(key, {}).get("confidence", 0)
                 if current.get(key) is None or new_conf > old_conf:
@@ -459,14 +470,12 @@ class SoulArchive:
                     meta[key] = {"confidence": new_conf, "updated": now_iso()}
                     updated.append(key)
             else:
-                # 列表类型：追加去重；标量类型：只填充空字段
                 if isinstance(value, list) and isinstance(current.get(key), list):
-                    existing_set = set(str(x) for x in current[key])
-                    new_items = [x for x in value if str(x) not in existing_set]
-                    if new_items:
-                        current[key].extend(new_items)
+                    merged, added = _dedup_merge_list(current[key], value, thr)
+                    if added:
+                        current[key] = merged
                         meta[key] = {"confidence": 0.7, "updated": now_iso()}
-                        updated.append(key)
+                        updated.append(f"{key}(+{added})")
                 elif current.get(key) is None:
                     current[key] = value
                     meta[key] = {"confidence": 0.7, "updated": now_iso()}
@@ -474,24 +483,17 @@ class SoulArchive:
         current["_meta"] = meta
         return updated
 
-    def _merge_personality(self, current: dict, new_data: dict) -> list:
-        """合并性格特征"""
+    def _merge_personality(self, current: dict, new_data: dict, thr: float) -> list:
         updated = []
         for key, value in new_data.items():
             if key.startswith("_") or value is None:
                 continue
-            if key == "traits" and isinstance(value, list):
-                existing = set(current.get("traits", []))
-                new_traits = [t for t in value if t not in existing]
-                if new_traits:
-                    current.setdefault("traits", []).extend(new_traits)
-                    updated.append(f"traits(+{len(new_traits)})")
-            elif key == "values" and isinstance(value, list):
-                existing = set(current.get("values", []))
-                new_values = [v for v in value if v not in existing]
-                if new_values:
-                    current.setdefault("values", []).extend(new_values)
-                    updated.append(f"values(+{len(new_values)})")
+            if key in ("traits", "values", "motivation_drivers", "growth_areas",
+                      "strengths", "weaknesses") and isinstance(value, list):
+                merged, added = _dedup_merge_list(current.get(key, []), value, thr)
+                if added:
+                    current[key] = merged
+                    updated.append(f"{key}(+{added})")
             elif key == "big_five" and isinstance(value, dict):
                 bf = current.setdefault("big_five", {})
                 for dim, score in value.items():
@@ -503,54 +505,60 @@ class SoulArchive:
                 updated.append(key)
         return updated
 
-    def _merge_language(self, current: dict, new_data: dict) -> list:
-        """合并语言风格"""
+    def _merge_language(self, current: dict, new_data: dict, thr: float) -> list:
         updated = []
+        list_keys = ("catchphrases", "sentence_patterns", "preferred_words",
+                    "avoided_words", "examples",
+                    "filler_words", "dialect_features",
+                    "agreement_expressions", "disagreement_expressions")
         for key, value in new_data.items():
             if key.startswith("_") or value is None:
                 continue
-            if key in ("catchphrases", "sentence_patterns", "preferred_words", "examples",
-                      "filler_words", "dialect_features", "agreement_expressions",
-                      "disagreement_expressions") and isinstance(value, list):
-                existing = current.get(key, [])
-                # 对于例句，去重
-                existing_set = set(str(x) for x in existing)
-                new_items = [x for x in value if str(x) not in existing_set]
-                if new_items:
-                    current.setdefault(key, []).extend(new_items)
-                    updated.append(f"{key}(+{len(new_items)})")
+            if key in list_keys and isinstance(value, list):
+                merged, added = _dedup_merge_list(current.get(key, []), value, thr)
+                if added:
+                    current[key] = merged
+                    updated.append(f"{key}(+{added})")
             elif key == "emoji_usage" and isinstance(value, dict):
                 eu = current.setdefault("emoji_usage", {})
                 if value.get("frequency"):
                     eu["frequency"] = value["frequency"]
                 if value.get("favorites"):
-                    existing_fav = set(eu.get("favorites", []))
-                    new_fav = [e for e in value["favorites"] if e not in existing_fav]
-                    if new_fav:
-                        eu.setdefault("favorites", []).extend(new_fav)
+                    merged, added = _dedup_merge_list(eu.get("favorites", []),
+                                                       value["favorites"], thr)
+                    if added:
+                        eu["favorites"] = merged
                         updated.append("emoji_usage")
             elif current.get(key) is None:
                 current[key] = value
                 updated.append(key)
         return updated
 
-    def _merge_topics(self, current: dict, new_topics: list) -> int:
-        """合并话题"""
-        existing = {t["name"]: t for t in current.get("topics", [])}
+    def _merge_topics(self, current: dict, new_topics: list, thr: float) -> int:
+        existing = {t["name"]: t for t in current.get("topics", []) if t.get("name")}
+        existing_names = list(existing.keys())
         count = 0
         for topic in new_topics:
             name = topic.get("name")
             if not name:
                 continue
+            match_name = None
             if name in existing:
-                # 更新已有话题
-                et = existing[name]
+                match_name = name
+            else:
+                for ex in existing_names:
+                    if _similarity(ex, name) >= thr:
+                        match_name = ex
+                        break
+            if match_name:
+                et = existing[match_name]
                 et["frequency"] = et.get("frequency", 0) + 1
                 et["last_mentioned"] = datetime.now().strftime("%Y-%m-%d")
                 if topic.get("key_opinions"):
-                    existing_ops = set(et.get("key_opinions", []))
-                    new_ops = [o for o in topic["key_opinions"] if o not in existing_ops]
-                    et.setdefault("key_opinions", []).extend(new_ops)
+                    merged, added = _dedup_merge_list(et.get("key_opinions", []),
+                                                       topic["key_opinions"], thr)
+                    if added:
+                        et["key_opinions"] = merged
                 if topic.get("sentiment"):
                     et["sentiment"] = topic["sentiment"]
                 if topic.get("stance"):
@@ -560,20 +568,37 @@ class SoulArchive:
                 topic.setdefault("frequency", 1)
                 topic.setdefault("last_mentioned", datetime.now().strftime("%Y-%m-%d"))
                 current.setdefault("topics", []).append(topic)
+                existing[name] = topic
+                existing_names.append(name)
                 count += 1
         return count
 
-    def _merge_emotional(self, current: dict, new_data: dict) -> list:
-        """合并情感模式"""
+    def _merge_knowledge(self, current: dict, new_data: dict, thr: float) -> list:
+        updated = []
+        for key in ("domains", "skills", "belief_frameworks"):
+            value = new_data.get(key)
+            if isinstance(value, list) and value:
+                merged, added = _dedup_merge_list(current.get(key, []), value, thr)
+                if added:
+                    current[key] = merged
+                    updated.append(f"{key}(+{added})")
+        if isinstance(new_data.get("expertise_level"), dict):
+            ex = current.setdefault("expertise_level", {})
+            for k, v in new_data["expertise_level"].items():
+                if k not in ex:
+                    ex[k] = v
+                    updated.append(f"expertise.{k}")
+        return updated
+
+    def _merge_emotional(self, current: dict, new_data: dict, thr: float) -> list:
         updated = []
         if new_data.get("triggers"):
             triggers = current.setdefault("triggers", {})
             for emotion, items in new_data["triggers"].items():
                 if items:
-                    existing = set(triggers.get(emotion, []))
-                    new_items = [i for i in items if i not in existing]
-                    if new_items:
-                        triggers.setdefault(emotion, []).extend(new_items)
+                    merged, added = _dedup_merge_list(triggers.get(emotion, []), items, thr)
+                    if added:
+                        triggers[emotion] = merged
                         updated.append(f"triggers.{emotion}")
         for key in ("expression_style", "emotional_range", "emotional_awareness",
                     "empathy_level", "celebration_style"):
@@ -582,40 +607,91 @@ class SoulArchive:
                 updated.append(key)
         for list_key in ("coping_mechanisms", "comfort_activities"):
             if new_data.get(list_key):
-                existing = set(current.get(list_key, []))
-                new_items = [i for i in new_data[list_key] if i not in existing]
-                if new_items:
-                    current.setdefault(list_key, []).extend(new_items)
+                merged, added = _dedup_merge_list(current.get(list_key, []),
+                                                   new_data[list_key], thr)
+                if added:
+                    current[list_key] = merged
                     updated.append(list_key)
         return updated
 
-    def _merge_people(self, current: dict, new_people: list) -> int:
-        """合并人际关系"""
-        existing = {p["name"]: p for p in current.get("people", [])}
-        count = 0
-        for person in new_people:
-            name = person.get("name")
-            if not name:
-                continue
-            if name in existing:
-                ep = existing[name]
-                for k, v in person.items():
-                    if v and not ep.get(k):
-                        ep[k] = v
-                count += 1
-            else:
-                current.setdefault("people", []).append(person)
-                count += 1
-        return count
+    def _merge_workflow(self, current: dict, new_data: dict, thr: float) -> list:
+        """Merge workflow preferences (v3.0 ⭐)"""
+        updated = []
+        # tools
+        if isinstance(new_data.get("tools"), dict):
+            tools = current.setdefault("tools", {})
+            for cat, items in new_data["tools"].items():
+                if isinstance(items, list) and items:
+                    merged, added = _dedup_merge_list(tools.get(cat, []), items, thr)
+                    if added:
+                        tools[cat] = merged
+                        updated.append(f"tools.{cat}(+{added})")
+        # tech_stack
+        if isinstance(new_data.get("tech_stack"), dict):
+            stack = current.setdefault("tech_stack", {})
+            for cat, items in new_data["tech_stack"].items():
+                if isinstance(items, list) and items:
+                    merged, added = _dedup_merge_list(stack.get(cat, []), items, thr)
+                    if added:
+                        stack[cat] = merged
+                        updated.append(f"tech_stack.{cat}(+{added})")
+        # list-typed
+        for key in ("hard_rules", "collab_conventions", "cli_habits", "pet_peeves"):
+            value = new_data.get(key)
+            if isinstance(value, list) and value:
+                merged, added = _dedup_merge_list(current.get(key, []), value, thr)
+                if added:
+                    current[key] = merged
+                    updated.append(f"{key}(+{added})")
+        # output_preferences
+        if isinstance(new_data.get("output_preferences"), dict):
+            op = current.setdefault("output_preferences", {})
+            for k, v in new_data["output_preferences"].items():
+                if v is not None and op.get(k) is None:
+                    op[k] = v
+                    updated.append(f"output_pref.{k}")
+        return updated
 
-    # ---- 完整度计算 ----
+    def _merge_aspirations(self, current: dict, new_data: dict, thr: float) -> list:
+        """Merge aspirations (v3.0 ⭐)"""
+        updated = []
+        for key in ("long_term_goals", "active_projects", "identity_aspirations",
+                    "skills_to_learn", "knowledge_gaps"):
+            value = new_data.get(key)
+            if isinstance(value, list) and value:
+                # active_projects 用 dict 类型，按 name 去重
+                if key == "active_projects":
+                    existing_names = {p.get("name") for p in current.get(key, [])
+                                     if isinstance(p, dict)}
+                    added_count = 0
+                    for proj in value:
+                        if isinstance(proj, dict):
+                            name = proj.get("name")
+                            if name and name not in existing_names:
+                                current.setdefault(key, []).append(proj)
+                                existing_names.add(name)
+                                added_count += 1
+                        else:
+                            # 字符串形式：当作 name 处理
+                            if proj not in existing_names:
+                                current.setdefault(key, []).append({"name": proj})
+                                existing_names.add(proj)
+                                added_count += 1
+                    if added_count:
+                        updated.append(f"{key}(+{added_count})")
+                else:
+                    merged, added = _dedup_merge_list(current.get(key, []), value, thr)
+                    if added:
+                        current[key] = merged
+                        updated.append(f"{key}(+{added})")
+        return updated
+
+    # --------------------------------------------------------
+    # Completeness scoring (v3.0 7-axis weights)
+    # --------------------------------------------------------
 
     @staticmethod
     def _saturation(value: float, threshold: float) -> float:
-        """log10 渐进式饱和曲线：永远趋近100%但不会在合理次数内封顶。
-        公式：log10(1 + value) / log10(1 + threshold)
-        例如 threshold=500000 时：1万次→62%, 10万次→78%, 100万次→94%。
-        """
         import math
         if value <= 0:
             return 0.0
@@ -623,9 +699,6 @@ class SoulArchive:
 
     @staticmethod
     def _early_penalty(extractions: int) -> float:
-        """冷启动惩罚：早期提取次数少，数据不可靠，需长期积累才有意义。
-        11次→0.30x → 实际：<30次→0.30x, <100次→0.45x, <300次→0.65x, <1000次→0.82x, <3000次→0.92x, ≥3000次→1.0x。
-        """
         if extractions <= 0:
             return 0.0
         if extractions < 30:
@@ -640,56 +713,32 @@ class SoulArchive:
             return 0.92
         return 1.0
 
-    def _calc_completeness(self) -> float:
-        """计算灵魂存档总体完整度（含冷启动惩罚）"""
-        scores = self._calc_dimension_scores()
-        weights = {
-            "identity": 0.05,
-            "personality": 0.22,
-            "language_style": 0.25,
-            "knowledge": 0.18,
-            "memory": 0.25,
-            "relationships": 0.03,
-            "voice": 0.02
-        }
-        raw_total = sum(scores.get(k, 0) * w for k, w in weights.items())
-        # 应用冷启动惩罚
-        profile = self.load_profile()
-        extractions = profile.get("total_extractions", 0)
-        penalty = self._early_penalty(extractions)
-        return round(raw_total * penalty, 3)
+    # v3.0 7-axis weights (industry-aligned)
+    DIM_WEIGHTS = {
+        "identity":       0.08,
+        "personality":    0.18,
+        "language_style": 0.20,
+        "knowledge":      0.14,
+        "memory":         0.18,   # episodic + emotional 合并
+        "workflow":       0.15,   # ⭐ 新维度
+        "aspirations":    0.07,   # ⭐ 新维度
+    }
 
     def _calc_completeness_from_scores(self, scores: dict) -> float:
-        """根据已计算的维度分数计算总完整度（避免重复计算维度）"""
-        weights = {
-            "identity": 0.05,
-            "personality": 0.22,
-            "language_style": 0.25,
-            "knowledge": 0.18,
-            "memory": 0.25,
-            "relationships": 0.03,
-            "voice": 0.02
-        }
-        raw_total = sum(scores.get(k, 0) * w for k, w in weights.items())
+        raw_total = sum(scores.get(k, 0) * w for k, w in self.DIM_WEIGHTS.items())
         profile = self.load_profile()
         extractions = profile.get("total_extractions", 0)
-        penalty = self._early_penalty(extractions)
-        return round(raw_total * penalty, 3)
+        return round(raw_total * self._early_penalty(extractions), 3)
+
+    def _calc_completeness(self) -> float:
+        return self._calc_completeness_from_scores(self._calc_dimension_scores())
 
     def _calc_dimension_scores(self) -> dict:
-        """计算各维度完整度分数。
-        设计原则：
-        - 使用 log10 渐进式饱和曲线，永远趋近100%但不会在合理次数内封顶
-        - 阈值设定极高（10万~500万级别），确保1万次时约70%，100万次时约98%
-        - 固定枚举字段用线性计算但权重极低（避免一填就拉高）
-        - 11次提取后总完整度 ~7%，1万次 ~70%，10万次 ~86%，100万次 ~98%
-        """
         sat = self._saturation
         scores = {}
-        c = self.crypto
 
-        # 身份（log渐进曲线，T=5000，上限85%）
-        bi = load_json(self.paths["basic_info"], {}, crypto=c)
+        # Identity
+        bi = load_json(self.paths["basic_info"], {})
         core_fields = ["name", "occupation", "location"]
         filled = sum(1 for f in core_fields if bi.get(f))
         extra_fields = ["age", "gender", "education", "hometown", "hobbies"]
@@ -700,18 +749,16 @@ class SoulArchive:
         filled += sum(0.3 for f in lifestyle_fields if bi.get(f))
         digital_fields = ["favorite_apps", "social_platforms", "tech_proficiency"]
         filled += sum(0.3 for f in digital_fields if bi.get(f))
-        max_score = len(core_fields) + len(extra_fields) * 0.5 + len(lifestyle_fields) * 0.3 + len(digital_fields) * 0.3
-        # 用提取次数作为身份维度的输入，log渐进曲线，T=5000
+        max_score = (len(core_fields) + len(extra_fields) * 0.5
+                    + len(lifestyle_fields) * 0.3 + len(digital_fields) * 0.3)
         profile = self.load_profile()
         extractions = profile.get("total_extractions", 0)
-        # identity 同时考虑字段填充率和提取次数积累
         field_ratio = filled / max_score if max_score > 0 else 0
-        # 字段填充提供基础分（上限85%），提取次数驱动长期增长
-        # 30%来自字段填充（避免一填就高），70%来自提取次数（log渐进，T=5000）
-        scores["identity"] = round(min(0.85, field_ratio) * 0.3 + sat(extractions, 5000) * 0.7 * 0.85, 2)
+        scores["identity"] = round(min(0.85, field_ratio) * 0.3
+                                    + sat(extractions, 5000) * 0.7 * 0.85, 2)
 
-        # 性格（列表高阈值 + 枚举极低权重）
-        ps = load_json(self.paths["personality"], {}, crypto=c)
+        # Personality
+        ps = load_json(self.paths["personality"], {})
         trait_count = len(ps.get("traits", []))
         value_count = len(ps.get("values", []))
         bf_count = sum(1 for v in ps.get("big_five", {}).values() if v is not None)
@@ -721,8 +768,6 @@ class SoulArchive:
         social_fields = ["social_energy", "group_role", "conflict_approach"]
         social_filled = sum(1 for f in social_fields if ps.get(f))
         motivation_count = len(ps.get("motivation_drivers", []))
-        # 列表类超高阈值：traits→600000, values→180000, motivation→180000
-        # 枚举类线性极低权重：bf(0.02), behavior(0.01), social(0.01), 合计枚举固定0.04
         scores["personality"] = round(
             sat(trait_count, 600000) * 0.30 +
             sat(value_count, 180000) * 0.10 +
@@ -732,8 +777,8 @@ class SoulArchive:
             (social_filled / len(social_fields)) * 0.01
         , 2)
 
-        # 语言风格（列表高阈值 + 枚举极低权重）
-        lang = load_json(self.paths["language"], {}, crypto=c)
+        # Language
+        lang = load_json(self.paths["language"], {})
         cp_count = len(lang.get("catchphrases", []))
         sp_count = len(lang.get("sentence_patterns", []))
         ex_count = len(lang.get("examples", []))
@@ -741,8 +786,6 @@ class SoulArchive:
                            "persuasion_style", "storytelling_style",
                            "agreement_expressions", "disagreement_expressions"]
         deep_filled = sum(1 for f in deep_lang_fields if lang.get(f))
-        # 列表类超高阈值：catchphrases→1200000, patterns→1000000, examples→4000000
-        # 枚举类线性极低权重：deep(0.02)
         scores["language_style"] = round(
             sat(cp_count, 1200000) * 0.30 +
             sat(sp_count, 1000000) * 0.25 +
@@ -750,44 +793,80 @@ class SoulArchive:
             (deep_filled / len(deep_lang_fields)) * 0.02
         , 2)
 
-        # 知识观点（列表超高阈值：topics→2000000）
-        topics = load_json(self.paths["topics"], {}, crypto=c)
+        # Knowledge: topics + belief_frameworks + skills
+        topics = load_json(self.paths["topics"], {})
         topic_count = len(topics.get("topics", []))
-        scores["knowledge"] = round(sat(topic_count, 2000000), 2)
+        knowl = load_json(self.paths["knowledge"], {})
+        belief_count = len(knowl.get("belief_frameworks", []))
+        skills_count = len(knowl.get("skills", []))
+        scores["knowledge"] = round(
+            sat(topic_count, 2000000) * 0.7 +
+            sat(belief_count, 100) * 0.2 +
+            sat(skills_count, 1000) * 0.1
+        , 2)
 
-        # 记忆（列表超高阈值：episodic→6000000）
+        # Memory: episodic + emotional triggers
         ep_dir = self.root / "memory" / "episodic"
         ep_count = 0
         if ep_dir.exists():
             for f in ep_dir.glob("*.jsonl"):
-                if c is not None:
-                    ep_count += len(c.read_sealed_records(f))
-                else:
-                    with open(f, 'r', encoding='utf-8') as fh:
-                        ep_count += sum(1 for _ in fh)
-        scores["memory"] = round(sat(ep_count, 6000000), 2)
+                with open(f, 'r', encoding='utf-8') as fh:
+                    ep_count += sum(1 for _ in fh)
+        emo = load_json(self.paths["emotional"], {})
+        triggers = emo.get("triggers", {}) or {}
+        emo_count = sum(len(v) for v in triggers.values() if isinstance(v, list))
+        scores["memory"] = round(
+            sat(ep_count, 6000000) * 0.75 +
+            sat(emo_count, 500) * 0.25
+        , 2)
 
-        # 人际关系（列表超高阈值：people→120000）
-        people = load_json(self.paths["people"], {}, crypto=c)
-        people_count = len(people.get("people", []))
-        scores["relationships"] = round(sat(people_count, 120000), 2)
+        # Workflow ⭐
+        wf = load_json(self.paths["workflow"], DEFAULT_WORKFLOW.copy())
+        tools_count = sum(len(v) for v in (wf.get("tools") or {}).values()
+                         if isinstance(v, list))
+        stack_count = sum(len(v) for v in (wf.get("tech_stack") or {}).values()
+                         if isinstance(v, list))
+        rules_count = len(wf.get("hard_rules", []))
+        peeves_count = len(wf.get("pet_peeves", []))
+        cli_count = len(wf.get("cli_habits", []))
+        op = wf.get("output_preferences") or {}
+        op_filled = sum(1 for k in ("preferred_format", "preferred_length",
+                                     "preferred_tone", "structure_first")
+                       if op.get(k))
+        scores["workflow"] = round(
+            sat(tools_count, 200) * 0.25 +
+            sat(stack_count, 200) * 0.20 +
+            sat(rules_count, 100) * 0.25 +
+            sat(peeves_count, 50) * 0.10 +
+            sat(cli_count, 100) * 0.10 +
+            (op_filled / 4) * 0.10
+        , 2)
 
-        # 语音（列表超高阈值：voice→10000）
-        voice_dir = self.root / "voice" / "samples"
-        voice_count = len(list(voice_dir.glob("*"))) if voice_dir.exists() else 0
-        scores["voice"] = round(sat(voice_count, 10000), 2)
+        # Aspirations ⭐
+        asp = load_json(self.paths["aspirations"], DEFAULT_ASPIRATIONS.copy())
+        goals_c = len(asp.get("long_term_goals", []))
+        proj_c = len(asp.get("active_projects", []))
+        idasp_c = len(asp.get("identity_aspirations", []))
+        skills_c = len(asp.get("skills_to_learn", []))
+        gaps_c = len(asp.get("knowledge_gaps", []))
+        scores["aspirations"] = round(
+            sat(goals_c, 50) * 0.30 +
+            sat(proj_c, 100) * 0.30 +
+            sat(idasp_c, 30) * 0.15 +
+            sat(skills_c, 100) * 0.15 +
+            sat(gaps_c, 100) * 0.10
+        , 2)
 
         return scores
 
     def get_status_report(self) -> str:
-        """生成状态报告"""
         profile = self.load_profile()
         scores = self._calc_dimension_scores()
         completeness = self._calc_completeness()
 
         lines = [
-            "🧬 灵魂存档状态报告",
-            f"━━━━━━━━━━━━━━━━━━━━━━━━",
+            "🧬 灵魂存档状态报告 (v3.0 · 7-axis)",
+            "━━━━━━━━━━━━━━━━━━━━━━━━",
             f"总完整度: {completeness:.1%}",
             f"总提取次数: {profile.get('total_extractions', 0)}",
             f"最后更新: {profile.get('last_updated', '从未')}",
@@ -796,29 +875,28 @@ class SoulArchive:
         ]
 
         dim_names = {
-            "identity": "👤 身份信息",
-            "personality": "💫 性格特征",
-            "language_style": "🗣️ 语言风格",
-            "knowledge": "🧠 知识观点",
-            "memory": "📝 记忆经历",
-            "relationships": "🤝 人际关系",
-            "voice": "🎤 语音特征",
+            "identity":       ("👤 身份信息",  0.08),
+            "personality":    ("💫 性格特征",  0.18),
+            "language_style": ("🗣️ 语言风格",  0.20),
+            "knowledge":      ("🧠 知识观点",  0.14),
+            "memory":         ("📝 记忆/情感", 0.18),
+            "workflow":       ("⚙️ 工作偏好",  0.15),
+            "aspirations":    ("🎯 理想抱负",  0.07),
         }
 
-        for key, name in dim_names.items():
+        for key, (name, w) in dim_names.items():
             score = scores.get(key, 0)
             bar = "█" * int(score * 10) + "░" * (10 - int(score * 10))
-            lines.append(f"  {name}: [{bar}] {score:.0%}")
+            lines.append(f"  {name} ({int(w*100)}%): [{bar}] {score:.0%}")
 
         return "\n".join(lines)
 
 
 # ============================================================
-# 提取结果构建器（供 AI 调用）
+# ExtractionBuilder (v3.0)
 # ============================================================
 
 class ExtractionBuilder:
-    """构建一次提取的结果"""
 
     def __init__(self):
         self.result = {
@@ -826,86 +904,20 @@ class ExtractionBuilder:
             "personality": {},
             "language": {},
             "topics": [],
+            "knowledge": {},
             "episodic": [],
             "emotional": {},
-            "people": [],
+            "workflow": {},
+            "aspirations": {},
             "summary": ""
         }
 
+    # ---- Identity ----
     def set_identity(self, **kwargs):
-        """设置身份信息。支持带置信度：set_identity(name={"value": "张三", "confidence": 0.95})"""
         self.result["basic_info"].update(kwargs)
         return self
 
-    def add_trait(self, trait: str):
-        self.result.setdefault("personality", {}).setdefault("traits", []).append(trait)
-        return self
-
-    def add_value(self, value: str):
-        self.result.setdefault("personality", {}).setdefault("values", []).append(value)
-        return self
-
-    def set_personality(self, **kwargs):
-        self.result["personality"].update(kwargs)
-        return self
-
-    def add_catchphrase(self, phrase: str):
-        self.result.setdefault("language", {}).setdefault("catchphrases", []).append(phrase)
-        return self
-
-    def add_sentence_pattern(self, pattern: str):
-        self.result.setdefault("language", {}).setdefault("sentence_patterns", []).append(pattern)
-        return self
-
-    def add_language_example(self, example: str):
-        self.result.setdefault("language", {}).setdefault("examples", []).append(example)
-        return self
-
-    def set_language(self, **kwargs):
-        self.result["language"].update(kwargs)
-        return self
-
-    def add_topic(self, name: str, sentiment: str = None, stance: str = None, opinions: list = None):
-        topic = {"name": name}
-        if sentiment:
-            topic["sentiment"] = sentiment
-        if stance:
-            topic["stance"] = stance
-        if opinions:
-            topic["key_opinions"] = opinions
-        self.result["topics"].append(topic)
-        return self
-
-    def add_episode(self, event: str, emotion: str = None, context: str = None, significance: str = "normal"):
-        ep = {"event": event, "significance": significance}
-        if emotion:
-            ep["emotion"] = emotion
-        if context:
-            ep["context"] = context
-        self.result["episodic"].append(ep)
-        return self
-
-    def add_emotional_trigger(self, emotion: str, trigger: str):
-        triggers = self.result.setdefault("emotional", {}).setdefault("triggers", {})
-        triggers.setdefault(emotion, []).append(trigger)
-        return self
-
-    def add_person(self, name: str, relationship: str = None, description: str = None):
-        person = {"name": name}
-        if relationship:
-            person["relationship"] = relationship
-        if description:
-            person["description"] = description
-        self.result["people"].append(person)
-        return self
-
-    def set_summary(self, summary: str):
-        self.result["summary"] = summary
-        return self
-
-    # === 新增：生活习惯 ===
     def set_lifestyle(self, **kwargs):
-        """设置生活习惯。如 set_lifestyle(sleep_schedule='夜猫子', spending_style='理性消费')"""
         self.result["basic_info"].update(kwargs)
         return self
 
@@ -921,17 +933,44 @@ class ExtractionBuilder:
         self.result.setdefault("basic_info", {}).setdefault("favorite_apps", []).append(app)
         return self
 
-    # === 新增：行为模式 ===
-    def set_behavior(self, **kwargs):
-        """设置行为模式。如 set_behavior(risk_tolerance='适度', planning_style='弹性计划')"""
+    # ---- Personality ----
+    def set_personality(self, **kwargs):
         self.result["personality"].update(kwargs)
+        return self
+
+    def set_behavior(self, **kwargs):
+        self.result["personality"].update(kwargs)
+        return self
+
+    def add_trait(self, trait: str):
+        self.result.setdefault("personality", {}).setdefault("traits", []).append(trait)
+        return self
+
+    def add_value(self, value: str):
+        self.result.setdefault("personality", {}).setdefault("values", []).append(value)
         return self
 
     def add_motivation(self, driver: str):
         self.result.setdefault("personality", {}).setdefault("motivation_drivers", []).append(driver)
         return self
 
-    # === 新增：深度语言指纹 ===
+    # ---- Language ----
+    def set_language(self, **kwargs):
+        self.result["language"].update(kwargs)
+        return self
+
+    def add_catchphrase(self, phrase: str):
+        self.result.setdefault("language", {}).setdefault("catchphrases", []).append(phrase)
+        return self
+
+    def add_sentence_pattern(self, pattern: str):
+        self.result.setdefault("language", {}).setdefault("sentence_patterns", []).append(pattern)
+        return self
+
+    def add_language_example(self, example: str):
+        self.result.setdefault("language", {}).setdefault("examples", []).append(example)
+        return self
+
     def add_filler_word(self, word: str):
         self.result.setdefault("language", {}).setdefault("filler_words", []).append(word)
         return self
@@ -948,9 +987,112 @@ class ExtractionBuilder:
         self.result.setdefault("language", {}).setdefault("disagreement_expressions", []).append(expr)
         return self
 
-    # === 新增：情感扩展 ===
+    # ---- Knowledge ----
+    def add_topic(self, name: str, sentiment: str = None, stance: str = None, opinions: list = None):
+        topic = {"name": name}
+        if sentiment:
+            topic["sentiment"] = sentiment
+        if stance:
+            topic["stance"] = stance
+        if opinions:
+            topic["key_opinions"] = opinions
+        self.result["topics"].append(topic)
+        return self
+
+    def add_belief_framework(self, name: str):
+        self.result.setdefault("knowledge", {}).setdefault("belief_frameworks", []).append(name)
+        return self
+
+    def add_skill(self, name: str):
+        self.result.setdefault("knowledge", {}).setdefault("skills", []).append(name)
+        return self
+
+    def add_domain(self, name: str):
+        self.result.setdefault("knowledge", {}).setdefault("domains", []).append(name)
+        return self
+
+    # ---- Memory ----
+    def add_episode(self, event: str, emotion: str = None, context: str = None,
+                    significance: str = "normal"):
+        ep = {"event": event, "significance": significance}
+        if emotion:
+            ep["emotion"] = emotion
+        if context:
+            ep["context"] = context
+        self.result["episodic"].append(ep)
+        return self
+
+    def add_emotional_trigger(self, emotion: str, trigger: str):
+        self.result.setdefault("emotional", {}).setdefault("triggers", {})\
+            .setdefault(emotion, []).append(trigger)
+        return self
+
     def add_comfort_activity(self, activity: str):
         self.result.setdefault("emotional", {}).setdefault("comfort_activities", []).append(activity)
+        return self
+
+    # ---- Workflow ⭐ ----
+    def add_tool(self, category: str, name: str):
+        """category: ide/terminal/ai_tools/vcs/doc_systems/communication"""
+        self.result.setdefault("workflow", {}).setdefault("tools", {})\
+            .setdefault(category, []).append(name)
+        return self
+
+    def add_tech(self, category: str, name: str):
+        """category: languages/frameworks/platforms"""
+        self.result.setdefault("workflow", {}).setdefault("tech_stack", {})\
+            .setdefault(category, []).append(name)
+        return self
+
+    def add_hard_rule(self, rule: str):
+        self.result.setdefault("workflow", {}).setdefault("hard_rules", []).append(rule)
+        return self
+
+    def add_collab_convention(self, conv: str):
+        self.result.setdefault("workflow", {}).setdefault("collab_conventions", []).append(conv)
+        return self
+
+    def add_cli_habit(self, habit: str):
+        self.result.setdefault("workflow", {}).setdefault("cli_habits", []).append(habit)
+        return self
+
+    def add_pet_peeve(self, peeve: str):
+        self.result.setdefault("workflow", {}).setdefault("pet_peeves", []).append(peeve)
+        return self
+
+    def set_output_preferences(self, **kwargs):
+        self.result.setdefault("workflow", {}).setdefault("output_preferences", {}).update(kwargs)
+        return self
+
+    # ---- Aspirations ⭐ ----
+    def add_long_term_goal(self, goal: str):
+        self.result.setdefault("aspirations", {}).setdefault("long_term_goals", []).append(goal)
+        return self
+
+    def add_active_project(self, name: str, status: str = None, expectation: str = None):
+        proj = {"name": name}
+        if status:
+            proj["status"] = status
+        if expectation:
+            proj["expectation"] = expectation
+        self.result.setdefault("aspirations", {}).setdefault("active_projects", []).append(proj)
+        return self
+
+    def add_identity_aspiration(self, asp: str):
+        self.result.setdefault("aspirations", {}).setdefault("identity_aspirations", []).append(asp)
+        return self
+
+    def add_skill_to_learn(self, skill: str):
+        self.result.setdefault("aspirations", {}).setdefault("skills_to_learn", []).append(skill)
+        return self
+
+    def add_knowledge_gap(self, gap: str):
+        self.result.setdefault("aspirations", {}).setdefault("knowledge_gaps", []).append(gap)
+        return self
+
+    # ---- Misc ----
+    def set_summary(self, summary: str):
+        self.result["summary"] = summary
         return self
 
     def build(self) -> dict:
@@ -958,26 +1100,21 @@ class ExtractionBuilder:
 
 
 # ============================================================
-# CLI 入口
+# CLI entry
 # ============================================================
 
 def main():
     default_soul_dir = str(Path.home() / ".skills_data" / "soul-archive")
-    parser = argparse.ArgumentParser(description="🧬 灵魂提取器")
+    parser = argparse.ArgumentParser(description="🧬 灵魂提取器 (v3.0)")
     parser.add_argument("--soul-dir", default=default_soul_dir,
                         help=f"灵魂数据目录路径（默认: {default_soul_dir}）")
     parser.add_argument("--input", help="对话内容（纯文本，直接传入）")
     parser.add_argument("--mode", default="auto", choices=["auto", "manual", "status"],
-                        help="模式：auto=自动提取, manual=手动, status=仅查看状态")
-    parser.add_argument("--access-key", help="访问密钥（不推荐在命令行使用，建议交互输入或设置 SOUL_ACCESS_KEY 环境变量）")
+                        help="模式")
 
     args = parser.parse_args()
 
     archive = SoulArchive(args.soul_dir)
-
-    # Auto-initialize crypto with migration support (handles cases C & D)
-    if archive.is_initialized():
-        archive.init_crypto_from_config(password=args.access_key)
 
     if args.mode == "status":
         if not archive.is_initialized():
@@ -986,11 +1123,7 @@ def main():
         print(archive.get_status_report())
         return
 
-    # 读取输入
-    conversation = ""
-    if args.input:
-        conversation = args.input
-    else:
+    if not args.input:
         print("请通过 --input 提供对话内容（纯文本）")
         sys.exit(1)
 
@@ -998,13 +1131,10 @@ def main():
         print("❌ 灵魂存档尚未初始化。请先运行 soul_init.py")
         sys.exit(1)
 
-    # 输出对话内容供 AI 分析（AI 会在外部调用后处理结果）
-    print(f"📖 收到对话内容（{len(conversation)} 字符）")
+    print(f"📖 收到对话内容（{len(args.input)} 字符）")
     print(f"📂 灵魂存档路径：{args.soul_dir}")
     print()
-    print("请使用 ExtractionBuilder 构建提取结果，然后调用 SoulArchive.save_extraction() 保存。")
-    print()
-    print("示例代码：")
+    print("请使用 ExtractionBuilder 构建提取结果：")
     print("```python")
     print("from soul_extract import SoulArchive, ExtractionBuilder")
     print(f"archive = SoulArchive('{args.soul_dir}')")
@@ -1012,7 +1142,12 @@ def main():
     print("builder.set_identity(name='张三', occupation='程序员')")
     print("builder.add_catchphrase('你懂我意思吧')")
     print("builder.add_topic('人工智能', sentiment='positive', stance='乐观派')")
-    print("builder.set_summary('本次发现用户是程序员，对AI态度乐观')")
+    print("builder.add_tool('ide', 'VS Code')                 # ⭐ workflow")
+    print("builder.add_hard_rule('禁止 git rebase')           # ⭐ workflow")
+    print("builder.add_pet_peeve('反感冗长解释')              # ⭐ workflow")
+    print("builder.add_long_term_goal('做一个独立开发者')      # ⭐ aspirations")
+    print("builder.add_knowledge_gap('Rust 异步编程')          # ⭐ aspirations")
+    print("builder.set_summary('本次发现：用户是程序员，重视效率')")
     print("changes = archive.save_extraction(builder.build())")
     print("```")
 

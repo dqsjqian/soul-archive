@@ -3,6 +3,8 @@
 🧬 灵魂对话引擎（Soul Chat）
 加载灵魂存档数据，构建角色扮演 System Prompt。
 
+v3.0：移除加密/语音相关代码，全部明文 JSON。
+
 用法：
   python3 soul_chat.py --mode prompt
   python3 soul_chat.py --soul-dir /custom/path --mode summary
@@ -15,21 +17,22 @@ import sys
 import argparse
 from pathlib import Path
 
-# 导入 soul_extract 中的工具
 sys.path.insert(0, str(Path(__file__).parent))
-from soul_extract import SoulArchive, load_json
+from soul_extract import SoulArchive  # noqa: E402
 
 
 def build_soul_prompt(archive: SoulArchive) -> str:
-    """根据灵魂存档构建角色扮演 System Prompt"""
+    """根据灵魂存档构建角色扮演 System Prompt（v3.0 7 维）"""
     data = archive.load_all()
     bi = data["basic_info"]
     ps = data["personality"]
     lang = data["language"]
     comm = data["communication"]
     topics = data["topics"]
+    knowl = data["knowledge"]
     emotional = data["emotional"]
-    people = data["people"]
+    workflow = data["workflow"]
+    aspirations = data["aspirations"]
 
     sections = []
 
@@ -152,7 +155,7 @@ def build_soul_prompt(archive: SoulArchive) -> str:
     if behavior_lines:
         sections.append("## 我的行为模式\n" + "\n".join(behavior_lines))
 
-    # ---- 说话风格（最关键）----
+    # ---- 说话风格 ----
     style_lines = []
     if lang.get("catchphrases"):
         style_lines.append(f"- 口头禅（请经常使用）：{', '.join(repr(p) for p in lang['catchphrases'])}")
@@ -189,7 +192,6 @@ def build_soul_prompt(archive: SoulArchive) -> str:
     if comm.get("logic_vs_emotion"):
         style_lines.append(f"- 逻辑/感性倾向：{comm['logic_vs_emotion']}")
 
-    # 深度语言指纹
     if lang.get("filler_words"):
         style_lines.append(f"- 常用语气词：{', '.join(lang['filler_words'])}")
     if lang.get("dialect_features"):
@@ -216,14 +218,14 @@ def build_soul_prompt(archive: SoulArchive) -> str:
     topic_list = topics.get("topics", [])
     if topic_list:
         topic_lines = []
-        for t in sorted(topic_list, key=lambda x: x.get("frequency", 0), reverse=True):
-            line = f"- **{t['name']}**"
-            if t.get("sentiment"):
-                line += f"（态度：{t['sentiment']}）"
-            if t.get("stance"):
-                line += f" ---- {t['stance']}"
-            if t.get("key_opinions"):
-                for op in t["key_opinions"]:
+        for tp in sorted(topic_list, key=lambda x: x.get("frequency", 0), reverse=True):
+            line = f"- **{tp['name']}**"
+            if tp.get("sentiment"):
+                line += f"（态度：{tp['sentiment']}）"
+            if tp.get("stance"):
+                line += f" ---- {tp['stance']}"
+            if tp.get("key_opinions"):
+                for op in tp["key_opinions"]:
                     line += f"\n  - {op}"
             topic_lines.append(line)
         sections.append("## 我关心什么 & 我的观点\n" + "\n".join(topic_lines))
@@ -265,34 +267,91 @@ def build_soul_prompt(archive: SoulArchive) -> str:
     if emo_lines:
         sections.append("## 我的情感世界\n" + "\n".join(emo_lines))
 
-    # ---- 人际关系 ----
-    people_list = people.get("people", [])
-    if people_list:
-        rel_lines = []
-        for p in people_list:
-            line = f"- **{p['name']}**"
-            if p.get("relationship"):
-                line += f"（{p['relationship']}）"
-            if p.get("description"):
-                line += f"：{p['description']}"
-            rel_lines.append(line)
-        sections.append("## 我认识的人\n" + "\n".join(rel_lines))
+    # ---- 我怎么做事（Workflow ⭐ v3.0）----
+    wf_lines = []
+    tools = workflow.get("tools", {}) or {}
+    tool_parts = []
+    for cat, label in [("ide", "IDE"), ("terminal", "终端"), ("ai_tools", "AI 工具"),
+                       ("vcs", "版本控制"), ("doc_systems", "文档系统"),
+                       ("communication", "通讯")]:
+        items = tools.get(cat) or []
+        if items:
+            tool_parts.append(f"{label}用 {'、'.join(items)}")
+    if tool_parts:
+        wf_lines.append("- " + "；".join(tool_parts))
+    stack = workflow.get("tech_stack", {}) or {}
+    stack_parts = []
+    for cat, label in [("languages", "语言"), ("frameworks", "框架"),
+                       ("platforms", "平台")]:
+        items = stack.get(cat) or []
+        if items:
+            stack_parts.append(f"{label}：{'、'.join(items)}")
+    if stack_parts:
+        wf_lines.append("- 技术栈：" + "；".join(stack_parts))
+    if workflow.get("hard_rules"):
+        wf_lines.append("- 硬规则（**必须遵守**）：")
+        for r in workflow["hard_rules"]:
+            wf_lines.append(f"  - {r}")
+    if workflow.get("collab_conventions"):
+        wf_lines.append(f"- 协作约定：{'、'.join(workflow['collab_conventions'])}")
+    if workflow.get("cli_habits"):
+        wf_lines.append(f"- CLI 习惯：{'、'.join(workflow['cli_habits'])}")
+    op = workflow.get("output_preferences", {}) or {}
+    op_lines = []
+    if op.get("preferred_format"):
+        op_lines.append(f"格式偏好 {op['preferred_format']}")
+    if op.get("preferred_length"):
+        op_lines.append(f"长度偏好 {op['preferred_length']}")
+    if op.get("preferred_tone"):
+        op_lines.append(f"语气 {op['preferred_tone']}")
+    if op.get("structure_first"):
+        op_lines.append(f"结论先行：{op['structure_first']}")
+    if op_lines:
+        wf_lines.append("- 输出偏好：" + "；".join(op_lines))
+    if workflow.get("pet_peeves"):
+        wf_lines.append("- 反感的事（**避免触发**）：" + "、".join(workflow["pet_peeves"]))
+
+    if wf_lines:
+        sections.append("## 我怎么做事 & 反感什么\n" + "\n".join(wf_lines))
+
+    # ---- 我想成为什么（Aspirations ⭐ v3.0）----
+    asp_lines = []
+    if aspirations.get("long_term_goals"):
+        asp_lines.append(f"- 长期目标：{'、'.join(aspirations['long_term_goals'])}")
+    if aspirations.get("active_projects"):
+        proj_strs = []
+        for p in aspirations["active_projects"]:
+            if isinstance(p, dict):
+                s = p.get("name", "")
+                if p.get("status"):
+                    s += f"（{p['status']}）"
+                proj_strs.append(s)
+            else:
+                proj_strs.append(str(p))
+        if proj_strs:
+            asp_lines.append("- 在做的项目：" + "、".join(proj_strs))
+    if aspirations.get("identity_aspirations"):
+        asp_lines.append(f"- 想成为：{'、'.join(aspirations['identity_aspirations'])}")
+    if aspirations.get("skills_to_learn"):
+        asp_lines.append(f"- 想学：{'、'.join(aspirations['skills_to_learn'])}")
+    if aspirations.get("knowledge_gaps"):
+        asp_lines.append(f"- 自认为不懂：{'、'.join(aspirations['knowledge_gaps'])}")
+
+    if asp_lines:
+        sections.append("## 我想成为什么\n" + "\n".join(asp_lines))
 
     # ---- 加载情景记忆 ----
     ep_dir = archive.root / "memory" / "episodic"
     episodes = []
     if ep_dir.exists():
         for f in sorted(ep_dir.glob("*.jsonl"), reverse=True):
-            if archive.crypto is not None:
-                episodes.extend(archive.crypto.read_sealed_records(f))
-            else:
-                with open(f, 'r', encoding='utf-8') as fh:
-                    for line in fh:
-                        try:
-                            ep = json.loads(line.strip())
-                            episodes.append(ep)
-                        except json.JSONDecodeError:
-                            continue
+            with open(f, 'r', encoding='utf-8') as fh:
+                for line in fh:
+                    try:
+                        ep = json.loads(line.strip())
+                        episodes.append(ep)
+                    except json.JSONDecodeError:
+                        continue
             if len(episodes) >= 20:
                 break
 
@@ -360,7 +419,6 @@ def main():
                         help=f"灵魂数据目录路径（默认: {default_soul_dir}）")
     parser.add_argument("--mode", default="prompt", choices=["prompt", "summary", "json"],
                         help="输出模式：prompt=完整角色prompt, summary=简短摘要, json=结构化数据")
-    parser.add_argument("--access-key", help="数据保护访问密钥（如果启用了数据保护）")
 
     args = parser.parse_args()
     archive = SoulArchive(args.soul_dir)
@@ -368,11 +426,6 @@ def main():
     if not archive.is_initialized():
         print("❌ 灵魂存档尚未初始化。请先运行 soul_init.py")
         sys.exit(1)
-
-    # Auto-initialize crypto if data protection is enabled
-    config = archive.load_config()
-    if config.get("encryption"):
-        archive.init_crypto_from_config(password=args.access_key)
 
     if args.mode == "prompt":
         print(build_soul_prompt(archive))

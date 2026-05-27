@@ -42,14 +42,30 @@ I18N = {
         "language_fp": "语言指纹",
         "topics": "话题兴趣",
         "emotions": "情感模式",
-        "relationships": "人际关系",
+        # v3.0 新维度
+        "workflow_title": "工作偏好",
+        "wf_tools": "🛠️ 常用工具",
+        "wf_stack": "🧰 技术栈",
+        "wf_rules": "🛡️ 硬规则（必守）",
+        "wf_collab": "🤝 协作约定",
+        "wf_cli": "⌨️ CLI 习惯",
+        "wf_output": "🎨 输出偏好",
+        "wf_peeves": "🚫 反感的事",
+        "wf_empty": "暂无工作偏好数据",
+        "aspirations_title": "理想抱负",
+        "asp_goals": "🌟 长期目标",
+        "asp_projects": "🔥 在做的项目",
+        "asp_identity": "🎭 想成为的样子",
+        "asp_skills": "📚 想学的技能",
+        "asp_gaps": "❓ 自认为不懂",
+        "asp_empty": "暂无抱负数据",
         "memories": "记忆片段",
         "footer": "灵魂存档 Soul Archive {version} · 生成于 {time}",
         # Identity fields
         "id_name": "姓名", "id_nickname": "昵称", "id_age": "年龄",
-        "id_gender": "性别", "id_location": "所在地", "id_hometown": "老家",
+        "id_gender": "性别", "id_location": "所在地", "id_hometown": "籍贯",
         "id_occupation": "职业", "id_company": "公司", "id_education": "学历",
-        "id_hobbies": "爱好", "id_motto": "人生信条",
+        "id_hobbies": "兴趣爱好", "id_motto": "人生信条",
         # Lifestyle
         "lifestyle": "🎯 生活习惯",
         "ls_routine": "作息", "ls_sleep": "睡眠",
@@ -91,7 +107,6 @@ I18N = {
         "no_lang_data": "暂无语言数据",
         "no_topic_data": "暂无话题数据",
         "no_emotion_data": "暂无情感数据",
-        "no_people_data": "暂无人际关系数据（需在 config.json 中启用 relationships 采集）",
         "no_memory_data": "暂无记忆数据，继续对话来积累...",
         # Big Five
         "bf_openness": "开放性", "bf_conscientiousness": "尽责性",
@@ -123,12 +138,27 @@ I18N = {
         "relief": "😮 松了口气", "satisfaction": "😌 满意",
         "shock_then_urgency": "😱 震惊后紧迫", "thoughtful": "🤔 若有所思",
         "excitement": "🤩 兴奋", "curiosity": "🧐 好奇", "peace": "😌 平静",
+        "accomplishment": "🏆 成就感", "achievement": "🏆 成就感",
+        "fulfillment": "🌟 充实感", "engagement": "🔥 投入",
+        "determination": "💪 坚定", "anticipation": "✨ 期待",
+        "frustration": "😤 挫败", "surprise": "😲 惊讶",
         "好奇": "🧐 好奇", "平静": "😌 平静", "满意": "😌 满意",
         # Dimension names for progress bars
         "dim_identity": "身份信息", "dim_personality": "性格特征",
         "dim_language": "语言风格", "dim_knowledge": "知识观点",
-        "dim_memory": "记忆经历", "dim_relationships": "人际关系",
-        "dim_voice": "语音特征",
+        "dim_memory": "记忆经历",
+        "dim_workflow": "工作偏好", "dim_aspirations": "理想抱负",
+        # v3.0 新增：时间线视图（7 维堆叠面积）
+        "timeline_title": "灵魂演变时间线",
+        "timeline_empty": "暂无足够数据生成时间线（需至少 3 天的对话快照）",
+        "timeline_y_label": "对总完整度的贡献 (%)",
+        "timeline_subtitle": "每个维度按权重换算成对总完整度的贡献百分点。整体堆叠高度 = 当日总完整度。",
+        # v3.0 新增：冲突视图
+        "conflict_title": "档案冲突待裁决",
+        "conflict_empty": "✅ 暂无冲突，灵魂档案保持一致",
+        "conflict_field": "字段",
+        "conflict_values": "冲突值",
+        "conflict_hint": "命令行执行：编辑 ~/.skills_data/soul-archive/ 下对应的 JSON 文件即可裁决",
     },
     "en": {
         "html_lang": "en",
@@ -141,7 +171,23 @@ I18N = {
         "language_fp": "Language Fingerprint",
         "topics": "Topic Interests",
         "emotions": "Emotional Patterns",
-        "relationships": "Relationships",
+        # v3.0 new dimensions
+        "workflow_title": "Workflow Preferences",
+        "wf_tools": "🛠️ Tools",
+        "wf_stack": "🧰 Tech Stack",
+        "wf_rules": "🛡️ Hard Rules (Must Follow)",
+        "wf_collab": "🤝 Collaboration Conventions",
+        "wf_cli": "⌨️ CLI Habits",
+        "wf_output": "🎨 Output Preferences",
+        "wf_peeves": "🚫 Pet Peeves",
+        "wf_empty": "No workflow data yet",
+        "aspirations_title": "Aspirations",
+        "asp_goals": "🌟 Long-term Goals",
+        "asp_projects": "🔥 Active Projects",
+        "asp_identity": "🎭 Identity I Aspire To",
+        "asp_skills": "📚 Skills to Learn",
+        "asp_gaps": "❓ Knowledge Gaps",
+        "asp_empty": "No aspirations data yet",
         "memories": "Memory Fragments",
         "footer": "Soul Archive {version} · Generated on {time}",
         # Identity fields
@@ -190,7 +236,6 @@ I18N = {
         "no_lang_data": "No language data yet",
         "no_topic_data": "No topic data yet",
         "no_emotion_data": "No emotional data yet",
-        "no_people_data": "No relationship data yet (enable relationships collection in config.json)",
         "no_memory_data": "No memory data yet. Keep chatting to build up...",
         # Big Five
         "bf_openness": "Openness", "bf_conscientiousness": "Conscientiousness",
@@ -223,11 +268,26 @@ I18N = {
         "shock_then_urgency": "😱 Shock→Urgency", "thoughtful": "🤔 Thoughtful",
         "excitement": "🤩 Excitement", "curiosity": "🧐 Curiosity",
         "peace": "😌 Peace",
+        "accomplishment": "🏆 Accomplishment", "achievement": "🏆 Achievement",
+        "fulfillment": "🌟 Fulfillment", "engagement": "🔥 Engagement",
+        "determination": "💪 Determination", "anticipation": "✨ Anticipation",
+        "frustration": "😤 Frustration", "surprise": "😲 Surprise",
         # Dimension names for progress bars
         "dim_identity": "Identity", "dim_personality": "Personality",
         "dim_language": "Language Style", "dim_knowledge": "Knowledge",
-        "dim_memory": "Memory", "dim_relationships": "Relationships",
-        "dim_voice": "Voice",
+        "dim_memory": "Memory",
+        "dim_workflow": "Workflow", "dim_aspirations": "Aspirations",
+        # v3.0 timeline view (7-axis stacked area)
+        "timeline_title": "Soul Evolution Timeline",
+        "timeline_empty": "Not enough data for a timeline yet (need at least 3 days of snapshots)",
+        "timeline_y_label": "Contribution to Total Completeness (%)",
+        "timeline_subtitle": "Each axis is weighted into its contribution to total completeness. Total stack height = total completeness on that day.",
+        # v3.0 conflict view
+        "conflict_title": "Pending Conflicts to Resolve",
+        "conflict_empty": "✅ No conflicts. Your soul archive is internally consistent.",
+        "conflict_field": "Field",
+        "conflict_values": "Conflicting Values",
+        "conflict_hint": "Resolve by editing the corresponding JSON file under ~/.skills_data/soul-archive/",
     }
 }
 
@@ -249,7 +309,7 @@ def detect_language(name: str) -> str:
     return "en"
 
 
-def generate_html_report(archive: SoulArchive, output_path: str = None, lang: str = None, skill_version: str = "v1.3.0") -> str:
+def generate_html_report(archive: SoulArchive, output_path: str = None, lang: str = None, skill_version: str = "v3.0.0") -> str:
     """Generate an HTML personality portrait report with automatic language detection."""
     data = archive.load_all()
     bi = data["basic_info"]
@@ -258,7 +318,8 @@ def generate_html_report(archive: SoulArchive, output_path: str = None, lang: st
     comm = data["communication"]
     topics_data = data["topics"]
     emotional = data["emotional"]
-    people = data["people"]
+    workflow_data = data.get("workflow", {}) or {}
+    aspirations_data = data.get("aspirations", {}) or {}
     profile = data["profile"]
 
     name = bi.get("name") or bi.get("nickname") or "Unknown Soul"
@@ -534,8 +595,8 @@ def generate_html_report(archive: SoulArchive, output_path: str = None, lang: st
         t["dim_language"]: scores.get("language_style", 0) * 100,
         t["dim_knowledge"]: scores.get("knowledge", 0) * 100,
         t["dim_memory"]: scores.get("memory", 0) * 100,
-        t["dim_relationships"]: scores.get("relationships", 0) * 100,
-        t["dim_voice"]: scores.get("voice", 0) * 100,
+        t["dim_workflow"]: scores.get("workflow", 0) * 100,
+        t["dim_aspirations"]: scores.get("aspirations", 0) * 100,
     }, ensure_ascii=False)
 
     # Emotional triggers
@@ -546,27 +607,184 @@ def generate_html_report(archive: SoulArchive, output_path: str = None, lang: st
             emo_data.append({"emotion": emo, "triggers": items})
     emo_json = json.dumps(emo_data, ensure_ascii=False)
 
-    # People
-    people_list = people.get("people", [])
-    people_json = json.dumps(people_list, ensure_ascii=False)
+    # v3.0 ⭐ Workflow + Aspirations data for HTML
+    workflow_json = json.dumps({
+        "tools": workflow_data.get("tools") or {},
+        "tech_stack": workflow_data.get("tech_stack") or {},
+        "hard_rules": workflow_data.get("hard_rules") or [],
+        "collab_conventions": workflow_data.get("collab_conventions") or [],
+        "cli_habits": workflow_data.get("cli_habits") or [],
+        "output_preferences": workflow_data.get("output_preferences") or {},
+        "pet_peeves": workflow_data.get("pet_peeves") or [],
+    }, ensure_ascii=False)
+
+    aspirations_json = json.dumps({
+        "long_term_goals": aspirations_data.get("long_term_goals") or [],
+        "active_projects": aspirations_data.get("active_projects") or [],
+        "identity_aspirations": aspirations_data.get("identity_aspirations") or [],
+        "skills_to_learn": aspirations_data.get("skills_to_learn") or [],
+        "knowledge_gaps": aspirations_data.get("knowledge_gaps") or [],
+    }, ensure_ascii=False)
 
     # Episodic memory
     ep_dir = archive.root / "memory" / "episodic"
     episodes = []
     if ep_dir.exists():
         for f in sorted(ep_dir.glob("*.jsonl"), reverse=True):
-            if archive.crypto is not None:
-                episodes.extend(archive.crypto.read_sealed_records(f))
-            else:
-                with open(f, 'r', encoding='utf-8') as fh:
-                    for line in fh:
-                        try:
-                            episodes.append(json.loads(line.strip()))
-                        except json.JSONDecodeError:
-                            continue
+            with open(f, 'r', encoding='utf-8') as fh:
+                for line in fh:
+                    try:
+                        episodes.append(json.loads(line.strip()))
+                    except json.JSONDecodeError:
+                        continue
             if len(episodes) >= 20:
                 break
     episodes_json = json.dumps(episodes[:20], ensure_ascii=False)
+
+    # ====================================================
+    # v3.0 P1-5: Soul Evolution Timeline — 7 维堆叠面积图
+    # ====================================================
+    # 从 changelog 读取每条记录的 dimensions 快照；按"日"取该日最后一次快照。
+    # 旧记录可能没有 dimensions 字段（v3.0 之前），用 None 占位，前端兼容显示。
+    DIM_KEYS = ["identity", "personality", "language_style",
+                "knowledge", "memory", "workflow", "aspirations"]
+    DIM_WEIGHTS = {
+        "identity": 0.08, "personality": 0.18, "language_style": 0.20,
+        "knowledge": 0.14, "memory": 0.18, "workflow": 0.15, "aspirations": 0.07,
+    }
+    timeline_data = []
+    changelog_path = archive.root / "soul_changelog.jsonl"
+    if changelog_path.exists():
+        by_day = {}  # day -> {"dimensions": {...}, "ts": "..."}
+        try:
+            with open(changelog_path, 'r', encoding='utf-8') as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        e = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    ts = e.get("timestamp", "")
+                    if not ts or len(ts) < 10:
+                        continue
+                    day = ts[:10]
+                    dims = e.get("dimensions")  # v3.0+ 才有
+                    # 取每日最后一条快照（按 timestamp 比较）
+                    if day not in by_day or ts > by_day[day]["ts"]:
+                        by_day[day] = {"dimensions": dims, "ts": ts}
+            # 按日期排序，最多 30 天
+            sorted_days = sorted(by_day.keys())[-30:]
+            for day in sorted_days:
+                dims = by_day[day]["dimensions"] or {}
+                # 把每个维度按权重换算成对总完整度的"贡献百分点"
+                # 即：维度分 × 维度权重 × 100 = 对总分的贡献(单位%)
+                contributions = {
+                    k: round((dims.get(k, 0) or 0) * DIM_WEIGHTS[k] * 100, 2)
+                    for k in DIM_KEYS
+                }
+                timeline_data.append({
+                    "date": day,
+                    "contributions": contributions,
+                    "has_snapshot": bool(dims)
+                })
+        except Exception:
+            pass
+    # 把"今日"的当前快照作为时间线最末点（始终有效，让用户至少看到 1 个点）
+    from datetime import date as _date
+    today_str = _date.today().isoformat()
+    today_contribs = {
+        k: round((scores.get(k, 0) or 0) * DIM_WEIGHTS[k] * 100, 2)
+        for k in DIM_KEYS
+    }
+    # 如果今天已有 changelog 记录，覆盖；否则追加
+    found_today = False
+    for d in timeline_data:
+        if d["date"] == today_str:
+            d["contributions"] = today_contribs
+            d["has_snapshot"] = True
+            found_today = True
+            break
+    if not found_today:
+        timeline_data.append({
+            "date": today_str,
+            "contributions": today_contribs,
+            "has_snapshot": True,
+        })
+
+    # 至少要有 2 个有效快照点才显示曲线（否则一个点没意义）
+    snapshot_count = sum(1 for d in timeline_data if d.get("has_snapshot"))
+    timeline_has_data = snapshot_count >= 2
+    timeline_json = json.dumps(timeline_data, ensure_ascii=False)
+
+    # ====================================================
+    # v3.0 P1-5: Conflict view (扫描档案里互相矛盾的条目)
+    # ====================================================
+    conflicts = []
+
+    def _scan_conflicts():
+        # 1. basic_info 里的对偶字段
+        bi_local = bi
+        food_pref = set(bi_local.get("food_preferences") or [])
+        food_dislike = set(bi_local.get("food_dislikes") or [])
+        overlap = food_pref & food_dislike
+        for x in overlap:
+            conflicts.append({
+                "field": "饮食偏好" if lang == "zh" else "Food",
+                "values": [f"喜欢:{x}", f"不喜欢:{x}"] if lang == "zh"
+                          else [f"likes:{x}", f"dislikes:{x}"]
+            })
+
+        # 2. language 里的偏好/避免词重叠
+        pref_words = set(lang_data.get("preferred_words") or [])
+        avoid_words = set(lang_data.get("avoided_words") or [])
+        for x in pref_words & avoid_words:
+            conflicts.append({
+                "field": "用词偏好" if lang == "zh" else "Word Preference",
+                "values": [f"喜欢:{x}", f"避免:{x}"] if lang == "zh"
+                          else [f"prefer:{x}", f"avoid:{x}"]
+            })
+
+        # 3. agreement / disagreement expressions 重叠
+        agree = set(lang_data.get("agreement_expressions") or [])
+        disagree = set(lang_data.get("disagreement_expressions") or [])
+        for x in agree & disagree:
+            conflicts.append({
+                "field": "同意/不同意表达" if lang == "zh" else "Agree/Disagree",
+                "values": [f"同意:{x}", f"不同意:{x}"] if lang == "zh"
+                          else [f"agree:{x}", f"disagree:{x}"]
+            })
+
+        # 4. emotional triggers 跨情绪重叠（同一触发器同时在 joy 和 anger 里）
+        triggers = (emotional or {}).get("triggers", {}) or {}
+        seen = {}
+        for emo, items in triggers.items():
+            for item in items or []:
+                if item in seen and seen[item] != emo:
+                    conflicts.append({
+                        "field": "情绪触发" if lang == "zh" else "Emotion Trigger",
+                        "values": [f"{seen[item]}:{item}", f"{emo}:{item}"]
+                    })
+                else:
+                    seen[item] = emo
+
+        # 5. topics 里同名重复（理论上去重后不会有，做兜底）
+        topic_names = [tp.get("name") for tp in (topics_data.get("topics") or [])]
+        from collections import Counter as _Counter
+        for name, cnt in _Counter(topic_names).items():
+            if name and cnt > 1:
+                conflicts.append({
+                    "field": "重复话题" if lang == "zh" else "Duplicate Topic",
+                    "values": [name, f"出现 {cnt} 次"] if lang == "zh"
+                              else [name, f"appears {cnt} times"]
+                })
+
+    try:
+        _scan_conflicts()
+    except Exception:
+        pass
+    conflicts_json = json.dumps(conflicts[:30], ensure_ascii=False)
 
     # MBTI: always infer from full personality data (multi-signal holistic derivation)
     mbti_type, mbti_dims = infer_mbti(ps, emotional, topics_data, episodes)
@@ -589,6 +807,14 @@ def generate_html_report(archive: SoulArchive, output_path: str = None, lang: st
         "relief": t["relief"], "satisfaction": t["satisfaction"],
         "shock_then_urgency": t["shock_then_urgency"],
         "thoughtful": t["thoughtful"],
+        # v3.0: extra english labels found in episodic data
+        "accomplishment": t["accomplishment"],
+        "achievement": t["achievement"],
+        "fulfillment": t["fulfillment"],
+        "engagement": t["engagement"],
+        "determination": t["determination"],
+        "anticipation": t["anticipation"],
+        "surprise": t["surprise"],
         # Chinese raw keys from data
         "满意": t.get("满意", t["satisfaction"]),
         "satisfied": t["satisfaction"],  # episodes use 'satisfied' (lowercase)
@@ -600,8 +826,8 @@ def generate_html_report(archive: SoulArchive, output_path: str = None, lang: st
     id_fields_json = json.dumps([
         [t["id_name"], "name"], [t["id_nickname"], "nickname"],
         [t["id_age"], "age"], [t["id_gender"], "gender"],
-        [t["id_location"], "location"], [t["id_hometown"], "hometown"],
-        [t["id_occupation"], "occupation"], [t["id_company"], "company"],
+        [t["id_location"], "location"], [t["id_occupation"], "occupation"],
+        [t["id_hometown"], "hometown"], [t["id_company"], "company"],
         [t["id_education"], "education"],
     ], ensure_ascii=False)
 
@@ -611,6 +837,7 @@ def generate_html_report(archive: SoulArchive, output_path: str = None, lang: st
         [t["ls_food"], "food_preferences"], [t["ls_music"], "music_taste"],
         [t["ls_movie"], "movie_taste"], [t["ls_book"], "book_taste"],
         [t["ls_aesthetic"], "aesthetic_style"], [t["ls_spending"], "spending_style"],
+        [t["id_hobbies"], "hobbies"],
         [t["ls_travel"], "travel_preferences"], [t["ls_pet"], "pet_preference"],
     ], ensure_ascii=False)
 
@@ -907,16 +1134,34 @@ footer {{
     </div>
   </div>
 
-  <!-- Relationships -->
+  <!-- v3.0 Workflow Preferences -->
   <div class="card">
-    <h2><span class="icon">🤝</span> {t['relationships']}</h2>
-    <div id="people-section"></div>
+    <h2><span class="icon">⚙️</span> {t['workflow_title']}</h2>
+    <div id="workflow-section"></div>
+  </div>
+
+  <!-- v3.0 Aspirations -->
+  <div class="card">
+    <h2><span class="icon">🎯</span> {t['aspirations_title']}</h2>
+    <div id="aspirations-section"></div>
   </div>
 
   <!-- Memory Fragments -->
   <div class="card">
     <h2><span class="icon">📝</span> {t['memories']}</h2>
     <div class="timeline" id="episodes-section"></div>
+  </div>
+
+  <!-- v3.0: Soul Evolution Timeline -->
+  <div class="card">
+    <h2><span class="icon">🕒</span> {t['timeline_title']}</h2>
+    <div id="evolution-timeline-section"></div>
+  </div>
+
+  <!-- v3.0: Conflict View -->
+  <div class="card">
+    <h2><span class="icon">⚠️</span> {t['conflict_title']}</h2>
+    <div id="conflict-section"></div>
   </div>
 
   <footer>
@@ -934,7 +1179,8 @@ const bigFive = {bf_json};
 const mbtiData = {mbti_json};
 const dimScores = {dim_json};
 const emotionalData = {emo_json};
-const peopleData = {people_json};
+const workflowData = {workflow_json};
+const aspirationsData = {aspirations_json};
 const episodes = {episodes_json};
 const emoLabels = {emo_labels_json};
 const arrSep = {json.dumps(arr_sep)};
@@ -969,16 +1215,65 @@ const i18n = {{
   noLangData: {json.dumps(t['no_lang_data'])},
   noTopicData: {json.dumps(t['no_topic_data'])},
   noEmotionData: {json.dumps(t['no_emotion_data'])},
-  noPeopleData: {json.dumps(t['no_people_data'])},
   noMemoryData: {json.dumps(t['no_memory_data'])},
   idHobbies: {json.dumps(t['id_hobbies'])},
-  idMotto: {json.dumps(t['id_motto'])}
+  idMotto: {json.dumps(t['id_motto'])},
+  timelineEmpty: {json.dumps(t['timeline_empty'])},
+  timelineYLabel: {json.dumps(t['timeline_y_label'])},
+  timelineSubtitle: {json.dumps(t['timeline_subtitle'])},
+  dimIdentity: {json.dumps(t['dim_identity'])},
+  dimPersonality: {json.dumps(t['dim_personality'])},
+  dimLanguage: {json.dumps(t['dim_language'])},
+  dimKnowledge: {json.dumps(t['dim_knowledge'])},
+  dimMemory: {json.dumps(t['dim_memory'])},
+  dimWorkflow: {json.dumps(t['dim_workflow'])},
+  dimAspirations: {json.dumps(t['dim_aspirations'])},
+  conflictField: {json.dumps(t['conflict_field'])},
+  conflictValues: {json.dumps(t['conflict_values'])},
+  conflictHint: {json.dumps(t['conflict_hint'])},
+  conflictEmpty: {json.dumps(t['conflict_empty'])},
+  wfTools: {json.dumps(t['wf_tools'])},
+  wfStack: {json.dumps(t['wf_stack'])},
+  wfRules: {json.dumps(t['wf_rules'])},
+  wfCollab: {json.dumps(t['wf_collab'])},
+  wfCli: {json.dumps(t['wf_cli'])},
+  wfOutput: {json.dumps(t['wf_output'])},
+  wfPeeves: {json.dumps(t['wf_peeves'])},
+  wfEmpty: {json.dumps(t['wf_empty'])},
+  aspGoals: {json.dumps(t['asp_goals'])},
+  aspProjects: {json.dumps(t['asp_projects'])},
+  aspIdentity: {json.dumps(t['asp_identity'])},
+  aspSkills: {json.dumps(t['asp_skills'])},
+  aspGaps: {json.dumps(t['asp_gaps'])},
+  aspEmpty: {json.dumps(t['asp_empty'])}
 }};
 
 // ---- Helpers ----
 function getVal(obj, key) {{
   const v = obj[key];
-  if (Array.isArray(v)) return v.length ? v.join(arrSep) : null;
+  if (Array.isArray(v)) {{
+    if (!v.length) return null;
+    // Handle list of objects gracefully (avoid [object Object])
+    return v.map(x => {{
+      if (x === null || x === undefined) return '';
+      if (typeof x === 'object') {{
+        // Common shapes we know about:
+        //   online_personas: {{platform, id, note}}
+        //   active_projects: {{name, status, expectation}}
+        //   generic: {{name|label|value}}
+        if (x.platform && x.id) {{
+          return x.id + (x.platform ? '@' + x.platform : '');
+        }}
+        if (x.name) {{
+          let s = x.name;
+          if (x.status) s += '(' + x.status + ')';
+          return s;
+        }}
+        return x.label || x.value || '';
+      }}
+      return String(x);
+    }}).filter(Boolean).join(arrSep) || null;
+  }}
   return v || null;
 }}
 
@@ -1002,9 +1297,7 @@ idFields.forEach(([label, key]) => {{
   if (v) idBasicEl.innerHTML += `<div class="info-row"><span class="key">${{label}}</span><span class="val">${{v}}</span></div>`;
 }});
 
-// Hobbies and motto
-const hobbies = basicInfo.hobbies?.length ? basicInfo.hobbies.join(arrSep) : null;
-if (hobbies) idBasicEl.innerHTML += `<div class="info-row"><span class="key">${{i18n.idHobbies}}</span><span class="val">${{hobbies}}</span></div>`;
+// Motto (兴趣爱好已移到生活习惯区域)
 const motto = basicInfo.life_motto;
 if (motto) idBasicEl.innerHTML += `<div class="info-row"><span class="key">${{i18n.idMotto}}</span><span class="val">${{motto}}</span></div>`;
 
@@ -1061,6 +1354,12 @@ if (filledSo.length) {{
 if (personality.motivation_drivers?.length) {{
   psHtml += `<div style="margin:10px 0 6px;color:var(--text-dim);font-size:0.85em;">${{i18n.drivers}}</div>`;
   personality.motivation_drivers.forEach(d => psHtml += `<span class="tag red">${{d}}</span>`);
+}}
+
+// Pet peeves（v3.0：从工作偏好移到性格特征卡尾部）
+if (workflowData && (workflowData.pet_peeves || []).length) {{
+  psHtml += `<div style="margin:10px 0 6px;color:var(--text-dim);font-size:0.85em;">${{i18n.wfPeeves}}</div>`;
+  workflowData.pet_peeves.forEach(p => psHtml += `<span class="tag red">${{p}}</span>`);
 }}
 
 psEl.innerHTML = psHtml || `<p style="color:var(--text-dim)">${{i18n.noData}}</p>`;
@@ -1215,19 +1514,105 @@ emotionalData.forEach(e => {{
 }});
 emoEl.innerHTML = emoHtml || `<p style="color:var(--text-dim)">${{i18n.noEmotionData}}</p>`;
 
-// ---- Relationships ----
-const pplEl = document.getElementById('people-section');
-if (peopleData.length) {{
-  peopleData.forEach(p => {{
-    const initial = (p.name || '?')[0];
-    pplEl.innerHTML += `<div class="person-card">
-      <div class="person-avatar">${{initial}}</div>
-      <div><strong>${{p.name}}</strong>${{p.relationship ? ' · ' + p.relationship : ''}}
-      ${{p.description ? '<br><span style="color:var(--text-dim);font-size:0.9em;">' + p.description + '</span>' : ''}}</div>
-    </div>`;
-  }});
-}} else {{
-  pplEl.innerHTML = `<p style="color:var(--text-dim)">${{i18n.noPeopleData}}</p>`;
+// ---- v3.0 Workflow Preferences ----
+const wfEl = document.getElementById('workflow-section');
+{{
+  const wf = workflowData;
+  let wfHtml = '';
+  // tools
+  const toolEntries = Object.entries(wf.tools || {{}}).filter(([k, v]) => Array.isArray(v) && v.length);
+  if (toolEntries.length) {{
+    wfHtml += `<div style="margin-bottom:14px;"><strong>${{i18n.wfTools}}</strong><br>`;
+    toolEntries.forEach(([cat, items]) => {{
+      wfHtml += `<div style="margin-top:6px;color:var(--text-dim);font-size:0.85em;">${{cat}}：</div>`;
+      items.forEach(it => wfHtml += `<span class="tag green" style="margin-top:4px;">${{it}}</span>`);
+    }});
+    wfHtml += '</div>';
+  }}
+  // tech stack
+  const stackEntries = Object.entries(wf.tech_stack || {{}}).filter(([k, v]) => Array.isArray(v) && v.length);
+  if (stackEntries.length) {{
+    wfHtml += `<div style="margin-bottom:14px;"><strong>${{i18n.wfStack}}</strong><br>`;
+    stackEntries.forEach(([cat, items]) => {{
+      wfHtml += `<div style="margin-top:6px;color:var(--text-dim);font-size:0.85em;">${{cat}}：</div>`;
+      items.forEach(it => wfHtml += `<span class="tag" style="margin-top:4px;">${{it}}</span>`);
+    }});
+    wfHtml += '</div>';
+  }}
+  // hard rules
+  if ((wf.hard_rules || []).length) {{
+    wfHtml += `<div style="margin-bottom:14px;"><strong>${{i18n.wfRules}}</strong><ul style="margin-top:6px;padding-left:20px;">`;
+    wf.hard_rules.forEach(r => wfHtml += `<li style="margin:4px 0;">${{r}}</li>`);
+    wfHtml += '</ul></div>';
+  }}
+  // collab + cli
+  if ((wf.collab_conventions || []).length) {{
+    wfHtml += `<div style="margin-bottom:14px;"><strong>${{i18n.wfCollab}}</strong><br>`;
+    wf.collab_conventions.forEach(c => wfHtml += `<span class="tag" style="margin-top:4px;">${{c}}</span>`);
+    wfHtml += '</div>';
+  }}
+  if ((wf.cli_habits || []).length) {{
+    wfHtml += `<div style="margin-bottom:14px;"><strong>${{i18n.wfCli}}</strong><br>`;
+    wf.cli_habits.forEach(c => wfHtml += `<span class="tag" style="margin-top:4px;">${{c}}</span>`);
+    wfHtml += '</div>';
+  }}
+  // output preferences
+  const op = wf.output_preferences || {{}};
+  const opPairs = [];
+  if (op.preferred_format) opPairs.push(['Format', op.preferred_format]);
+  if (op.preferred_length) opPairs.push(['Length', op.preferred_length]);
+  if (op.preferred_tone) opPairs.push(['Tone', op.preferred_tone]);
+  if (op.structure_first) opPairs.push(['Structure', op.structure_first]);
+  if (opPairs.length) {{
+    wfHtml += `<div style="margin-bottom:14px;"><strong>${{i18n.wfOutput}}</strong><br>`;
+    opPairs.forEach(([k, v]) => wfHtml += `<span class="tag" style="margin-top:4px;">${{k}}: ${{v}}</span>`);
+    wfHtml += '</div>';
+  }}
+  // pet_peeves 已移到「性格特征」卡的尾部渲染
+  wfEl.innerHTML = wfHtml || `<p style="color:var(--text-dim)">${{i18n.wfEmpty}}</p>`;
+}}
+
+// ---- v3.0 Aspirations ----
+const aspEl = document.getElementById('aspirations-section');
+{{
+  const asp = aspirationsData;
+  let aspHtml = '';
+  if ((asp.long_term_goals || []).length) {{
+    aspHtml += `<div style="margin-bottom:14px;"><strong>${{i18n.aspGoals}}</strong><br>`;
+    asp.long_term_goals.forEach(g => aspHtml += `<span class="tag yellow" style="margin-top:4px;">${{g}}</span>`);
+    aspHtml += '</div>';
+  }}
+  if ((asp.active_projects || []).length) {{
+    aspHtml += `<div style="margin-bottom:14px;"><strong>${{i18n.aspProjects}}</strong><ul style="margin-top:6px;padding-left:20px;">`;
+    asp.active_projects.forEach(p => {{
+      let line = '';
+      if (typeof p === 'object' && p !== null) {{
+        line = '<strong>' + (p.name || '') + '</strong>';
+        if (p.status) line += ' <span style="color:var(--text-dim);font-size:0.85em;">— ' + p.status + '</span>';
+        if (p.expectation) line += '<br><span style="color:var(--text-dim);font-size:0.85em;">' + p.expectation + '</span>';
+      }} else {{
+        line = String(p);
+      }}
+      aspHtml += `<li style="margin:6px 0;">${{line}}</li>`;
+    }});
+    aspHtml += '</ul></div>';
+  }}
+  if ((asp.identity_aspirations || []).length) {{
+    aspHtml += `<div style="margin-bottom:14px;"><strong>${{i18n.aspIdentity}}</strong><br>`;
+    asp.identity_aspirations.forEach(i => aspHtml += `<span class="tag" style="margin-top:4px;">${{i}}</span>`);
+    aspHtml += '</div>';
+  }}
+  if ((asp.skills_to_learn || []).length) {{
+    aspHtml += `<div style="margin-bottom:14px;"><strong>${{i18n.aspSkills}}</strong><br>`;
+    asp.skills_to_learn.forEach(s => aspHtml += `<span class="tag green" style="margin-top:4px;">${{s}}</span>`);
+    aspHtml += '</div>';
+  }}
+  if ((asp.knowledge_gaps || []).length) {{
+    aspHtml += `<div style="margin-bottom:14px;"><strong>${{i18n.aspGaps}}</strong><br>`;
+    asp.knowledge_gaps.forEach(g => aspHtml += `<span class="tag" style="margin-top:4px;">${{g}}</span>`);
+    aspHtml += '</div>';
+  }}
+  aspEl.innerHTML = aspHtml || `<p style="color:var(--text-dim)">${{i18n.aspEmpty}}</p>`;
 }}
 
 // ---- Memory Fragments ----
@@ -1243,6 +1628,92 @@ if (episodes.length) {{
   }});
 }} else {{
   epEl.innerHTML = `<p style="color:var(--text-dim)">${{i18n.noMemoryData}}</p>`;
+}}
+
+// ---- v3.0 Soul Evolution Timeline (7-axis stacked area) ----
+const timelineData = {timeline_json};
+const timelineHasData = {str(timeline_has_data).lower()};
+const evtEl = document.getElementById('evolution-timeline-section');
+if (timelineHasData && timelineData.length) {{
+  // Filter: only days with valid snapshots
+  const valid = timelineData.filter(d => d.has_snapshot);
+  // Each axis with its color (matched to overall design tokens)
+  const axes = [
+    {{key: 'identity',       label: i18n.dimIdentity,    color: '#7c5bf5'}},  // purple
+    {{key: 'personality',    label: i18n.dimPersonality, color: '#ff6b9d'}},  // pink
+    {{key: 'language_style', label: i18n.dimLanguage,    color: '#ffd93d'}},  // yellow
+    {{key: 'knowledge',      label: i18n.dimKnowledge,   color: '#00d4aa'}},  // teal
+    {{key: 'memory',         label: i18n.dimMemory,      color: '#6bcb77'}},  // green
+    {{key: 'workflow',       label: i18n.dimWorkflow,    color: '#ff9a3c'}},  // orange
+    {{key: 'aspirations',    label: i18n.dimAspirations, color: '#5dade2'}},  // light blue
+  ];
+  evtEl.innerHTML = '<p style="color:var(--text-dim);font-size:0.85em;margin-bottom:8px;">' + i18n.timelineSubtitle + '</p>';
+  evtEl.innerHTML += '<canvas id="evolutionChart" height="140"></canvas>';
+  const ctx = document.getElementById('evolutionChart').getContext('2d');
+  new Chart(ctx, {{
+    type: 'line',
+    data: {{
+      labels: valid.map(d => d.date),
+      datasets: axes.map(ax => ({{
+        label: ax.label,
+        data: valid.map(d => (d.contributions || {{}})[ax.key] || 0),
+        borderColor: ax.color,
+        backgroundColor: ax.color + '55',  // ~33% alpha
+        fill: true,
+        tension: 0.25,
+        pointRadius: 2,
+        borderWidth: 1.5,
+      }}))
+    }},
+    options: {{
+      responsive: true,
+      interaction: {{ mode: 'index', intersect: false }},
+      plugins: {{
+        legend: {{ position: 'bottom', labels: {{ color: '#e8e8f0', boxWidth: 14, padding: 10 }} }},
+        tooltip: {{
+          callbacks: {{
+            footer: (items) => {{
+              const total = items.reduce((s, it) => s + (it.parsed.y || 0), 0);
+              return 'Total: ' + total.toFixed(1) + '%';
+            }}
+          }}
+        }}
+      }},
+      scales: {{
+        x: {{ ticks: {{ color: '#8888a0' }}, grid: {{ color: 'rgba(42,42,62,0.4)' }} }},
+        y: {{
+          stacked: true, beginAtZero: true,
+          title: {{ display: true, text: i18n.timelineYLabel, color: '#8888a0' }},
+          ticks: {{ color: '#8888a0', callback: (v) => v + '%' }},
+          grid: {{ color: 'rgba(42,42,62,0.4)' }}
+        }}
+      }}
+    }}
+  }});
+}} else {{
+  evtEl.innerHTML = `<p style="color:var(--text-dim)">${{i18n.timelineEmpty}}</p>`;
+}}
+
+// ---- v3.0 Conflict View ----
+const conflicts = {conflicts_json};
+const conflictEl = document.getElementById('conflict-section');
+if (conflicts.length) {{
+  let html = '<table style="width:100%;border-collapse:collapse">';
+  html += '<thead><tr>';
+  html += '<th style="text-align:left;padding:8px 6px;border-bottom:1px solid var(--border);color:var(--text-dim);font-weight:500">' + i18n.conflictField + '</th>';
+  html += '<th style="text-align:left;padding:8px 6px;border-bottom:1px solid var(--border);color:var(--text-dim);font-weight:500">' + i18n.conflictValues + '</th>';
+  html += '</tr></thead><tbody>';
+  conflicts.forEach(c => {{
+    html += '<tr>';
+    html += '<td style="padding:8px 6px;border-bottom:1px solid var(--border)"><strong>' + c.field + '</strong></td>';
+    html += '<td style="padding:8px 6px;border-bottom:1px solid var(--border)">' + (c.values || []).map(v => '<span class="tag yellow" style="margin-right:6px">' + v + '</span>').join('') + '</td>';
+    html += '</tr>';
+  }});
+  html += '</tbody></table>';
+  html += '<p style="margin-top:12px;color:var(--text-dim);font-size:0.85em">' + i18n.conflictHint + '</p>';
+  conflictEl.innerHTML = html;
+}} else {{
+  conflictEl.innerHTML = `<p style="color:var(--accent)">${{i18n.conflictEmpty}}</p>`;
 }}
 </script>
 
@@ -1270,7 +1741,6 @@ def main():
     parser.add_argument("--lang", choices=["zh", "en"], default=None,
                         help="Report language: zh (Chinese) or en (English). "
                              "Auto-detected from user name if not specified.")
-    parser.add_argument("--access-key", help="Access key (if data protection is enabled)")
 
     args = parser.parse_args()
     archive = SoulArchive(args.soul_dir)
@@ -1294,11 +1764,6 @@ def main():
     if not archive.is_initialized():
         print("❌ Soul archive not initialized. Run soul_init.py first.")
         sys.exit(1)
-
-    # Auto-initialize crypto if data protection is enabled
-    config = archive.load_config()
-    if config.get("encryption"):
-        archive.init_crypto_from_config(password=args.access_key)
 
     if not args.output:
         print("❌ 请通过 --output 指定报告输出路径（建议输出到工作目录，非数据目录）")

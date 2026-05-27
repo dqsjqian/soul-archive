@@ -1,292 +1,272 @@
 ---
 name: soul-archive
-version: "2.2.8"
-description: "Soul Archive -- A digital personality persistence system that builds your digital soul clone through everyday AI conversations (with user consent, auto-extraction disabled by default). All data stored locally with optional AES-256-GCM data protection. Four modes: Soul Extract, Soul Chat, Soul Report, AI Self-Improvement. | 灵魂存档 ---- 通过日常对话构建数字人格克隆体（需用户授权，自动采集默认关闭），数据本地存储，支持 AES-256-GCM 数据保护。四大模式：灵魂沉淀、灵魂对话、灵魂报告、AI 自我改进。Trigger words: soul extract, soul archive, soul update, soul sync, soul snapshot, soul sediment, soul report, soul chat, self-reflect, self-improve, learn from mistakes, 灵魂沉淀, 灵魂提取, 灵魂存档, 灵魂报告, 灵魂对话, 自我反思, 自我批评, 自我学习."
+version: "3.0.0"
+description: "Soul Archive — A digital personality persistence system + agentic memory. Builds your digital soul clone through everyday AI conversations, with proactive context injection, cross-session recall, failure-pattern warning, and pattern distillation. All data stored locally as plaintext JSON. 7-axis schema: Identity / Personality / Language / Knowledge / Memory / Workflow / Aspirations. Six modes: Soul Extract, Soul Chat, Soul Report, Soul Context Inject, Agent Memory Recall, AI Self-Improvement. | 灵魂存档 ---- 通过日常 AI 对话构建数字人格克隆体 + 主动智能体记忆。支持自动 hook、对话开始时主动注入人格摘要、跨会话召回、失败模式预警、行为模式蒸馏。数据全部本地明文 JSON。七维 schema：身份/性格/语言风格/知识观点/记忆/工作偏好/理想抱负。六大模式：灵魂沉淀、灵魂对话、灵魂报告、上下文注入、智能体记忆召回、AI 自我改进。Trigger words: soul extract, soul archive, soul update, soul chat, soul report, soul context, soul recall, soul warn, self-reflect, self-improve, learn from mistakes, 灵魂沉淀, 灵魂提取, 灵魂存档, 灵魂报告, 灵魂对话, 自我反思, 自我批评, 自我学习."
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob
 # ^^^ 工具说明：Read/Write/Edit 用于读写数据文件；Bash 用于执行 Python 脚本；
 # Grep/Glob 用于文件搜索。数据目录默认为 ~/.skills_data/soul-archive/，支持用户通过 --soul-dir 自定义。
-env:
-  SOUL_PASSWORD:
-    description: "AES-256-GCM access key for soul data protection (optional, recommended for privacy)"
-    required: false
 requirements:
   - "Python 3.10+"
-  - "cryptography (install via: pip install cryptography)"
 ---
 
-# 🧬 Soul Archive
+# 🧬 Soul Archive (v3.0)
 
 > *"Every conversation is a slice of the soul. Enough slices, and you can rebuild a complete you."*
 
+## What's New in v3.0
+
+- 🚫 **加密层移除** —— 所有数据明文 JSON，去除 AES-256-GCM 复杂度。隐私通过本地存储 + `.gitignore` 保证，不再有"丢密钥即丢数据"的风险。
+- 🚫 **Voice / Relationships 维度移除** —— 在 AI 对话场景里难以可靠采集，保留它们只会拉低总完整度的代表性。
+- 🆕 **Workflow 维度** —— 工具/技术栈/硬规则/输出偏好，对应业界共识的 *Procedural Memory*。AI 立刻能用。
+- 🆕 **Aspirations 维度** —— 长期目标/在做的项目/想成为/想学/认知盲区。
+- 🔀 **反感的事归位** —— `workflow.pet_peeves` 数据字段保留（采集稳定），但 HTML 报告里渲染在「💫 性格特征」卡尾部，更符合心理语义。
+- 🆕 **主动 Agent Memory** —— `soul_agent_memory.py` 提供：跨会话召回、失败模式预警、行为模式蒸馏。
+- 🆕 **主动上下文注入** —— `soul_context.py` 在对话开始时输出 ≤800 token 的人格摘要，agent 直接拼到 system prompt。
+- 🆕 **统一 CLI** —— `soul.py` 路由全部子命令。
+- 🆕 **去重合并** —— 写入前用 bigram-Jaccard 相似度（默认阈值 0.85）合并同义条目，避免重复。
+- 🆕 **HTML 报告增强** —— 新增"灵魂演变时间线"和"档案冲突"视图。
+
 ## Overview
 
-Soul Archive is a **digital personality persistence system**. With user consent or explicit activation, it automatically extracts and archives:
+Soul Archive 是一个**数字人格持久化 + 主动智能体记忆**系统。在用户授权或显式触发下，它能：
 
-- 🗣️ **Speaking habits** -- catchphrases, sentence patterns, word choice, humor style
-- 🧠 **Knowledge & opinions** -- views on topics, professional expertise, thinking patterns
-- 👤 **Personal information** -- identity, experiences, relationships, life details
-- 💫 **Personality traits** -- decision-making style, emotional patterns, values
-- 🎤 **Voice features** (optional) -- tone, pace, accent
-- ❤️ **Emotional patterns** -- emotional triggers, expression style, empathy patterns
+- 🗣️ **采集说话习惯** —— 口头禅、句式、用词、幽默风格
+- 🧠 **采集知识与观点** —— 关注的话题、立场、信奉的方法论
+- 👤 **采集个人信息** —— 身份、经历、生活细节
+- 💫 **采集性格特征** —— 决策风格、情绪模式、价值观
+- ⚙️ **采集工作偏好** ⭐ —— 工具/技术栈/硬规则/输出偏好（含反感的事，见性格卡）
+- 🎯 **采集理想抱负** ⭐ —— 长期目标、正在做的项目、想学的技能
+- 📝 **采集情景记忆** —— 具体事件、人生片段
+- 🤖 **服务 AI 自身** —— 跨会话召回过往模式、失败预警、行为模式蒸馏
 
-The result: a **digital soul clone** that can:
-1. **During life** -- act and reply on your behalf, in your style
-2. **After life** -- let loved ones continue talking to "you", preserving the emotional connection
+最终成果：一个**数字灵魂副本**，能：
+1. **生前** —— 以你的风格替你回应；让其他 AI Agent 一秒"懂你"
+2. **身后** —— 让所爱之人继续与"你"对话，留住情感连接
 
 ## Core Principles
 
 ### 🔒 Privacy First
-- All data stored in `~/.skills_data/soul-archive/` -- **nothing uploaded to the cloud**
-- **Data flow note**: Soul Chat mode builds prompts from archived data for agent use; whether those prompts are sent to external LLMs depends on your agent/platform config
-- **AES-256-GCM data protection** supported (off by default) -- protects identity, personality, language fingerprint, emotional patterns, and relationships
-- `~/.skills_data/soul-archive/` is resolved via Python's `Path.home()` on macOS, Linux, and Windows
-- Fine-grained control via `config.json` -- disable any extraction dimension
-- Sensitive topics (health, finance, intimate relationships) require confirmation by default
+- 全部数据存在 `~/.skills_data/soul-archive/`，**不上传任何云端**
+- v3.0 全部明文 JSON。`.gitignore` 拦截 VCS 提交。
+- **Soul Chat 流向**：基于本地档案构建 prompt，是否被外部 LLM 看到，取决于你的 agent/平台配置。
+- 通过 `config.json` 细粒度控制每个维度的开关。
+- 默认敏感话题（健康、财务、亲密关系）需用户确认。
 
 ### 🤫 Non-intrusive Extraction
-- Does not interrupt conversation flow or ask follow-up questions
-- Activated via trigger words, or opt-in auto mode
-- Only updates the archive when new, high-value information is found
+- 不打断对话流，不追问。
+- 通过触发词或 `auto_extract: true` 自动激活。
+- 只在发现新的、高置信度信息时更新。
 
-> ⚠️ **Transparency**: Auto-extraction means the AI extracts personality info during conversations. To stay in full control, set `auto_extract: false` in `config.json` and trigger manually ("沉淀一下" / "soul extract"). Review `config.json` before first use.
+> ⚠️ **透明度**：开启 `auto_extract` 意味着 AI 会在对话中提取人格信息。完全控制需 `auto_extract: false`，并以触发词手动激活（"沉淀一下" / "soul extract"）。首次使用前请审阅 `config.json`。
 
 ### 📐 High Confidence
-- Every piece of information carries a confidence score
-- Explicit user statement > inference > vague hint
-- Conflicting information is flagged, never auto-overwritten
+- 每条信息携带置信度。
+- 用户明示 > 推理 > 模糊暗示。
+- 冲突信息会被标记，不会自动覆盖。
 
 ---
 
 ## Architecture: Skill ↔ Data Separation
 
 ```
-{SKILL_DIR}/                  ← Skill (the engine)
-~/.skills_data/soul-archive/  ← Soul data (stored in your home directory)
+{SKILL_DIR}/                  ← Skill 引擎
+~/.skills_data/soul-archive/  ← 你的灵魂数据（用户主目录）
 ```
 
-The skill is the extraction engine; the soul data is yours. Because data lives in your home directory, any IDE, AI tool, or workspace on the same machine can access the same soul.
+数据放在用户主目录，所以同机器上任何 IDE / AI 工具 / Workspace 都能访问同一份灵魂。
 
 ---
 
-## Data Directory Structure
+## v3.0 Data Directory Structure
 
 ```
 ~/.skills_data/soul-archive/
-├── profile.json                  # Soul profile (completeness, version)
-├── config.json                   # Privacy & extraction config
+├── profile.json                  # 总体完整度、版本号
+├── config.json                   # 隐私 / 提取 / Agent 自我改进配置
 ├── identity/
-│   ├── basic_info.json           # Identity + lifestyle + digital identity
-│   └── personality.json          # Personality + behavior + social style
+│   ├── basic_info.json           # 身份 + 生活习惯 + 数字身份
+│   └── personality.json          # 性格 + 行为模式 + 社交风格
 ├── memory/
-│   ├── episodic/                 # Episodic memory (date-based, JSONL)
-│   │   └── YYYY-MM-DD.jsonl
+│   ├── episodic/YYYY-MM-DD.jsonl # 情景记忆
 │   ├── semantic/
-│   │   ├── topics.json           # Topic interest & opinion map
-│   │   └── knowledge.json        # Professional knowledge
-│   └── emotional/
-│       └── patterns.json         # Emotional triggers & patterns
+│   │   ├── topics.json           # 话题兴趣 & 观点地图
+│   │   └── knowledge.json        # 专业知识 + belief_frameworks（信奉的方法论）
+│   └── emotional/patterns.json   # 12 种情绪触发 + 表达/共情/应对
 ├── style/
-│   ├── language.json             # Language fingerprint + deep features
-│   └── communication.json        # Communication preferences
-├── voice/                        # Voice data (optional)
-│   ├── samples/
-│   └── voice_profile.json
-├── relationships/
-│   └── people.json               # Relationship map
-├── agent/                        # AI Self-Improvement
-│   ├── patterns.json             # Behavioral pattern library
-│   ├── episodes/                 # Work episodes (date-based)
-│   │   └── YYYY-MM-DD.jsonl
-│   ├── corrections.jsonl         # Self-critique log
-│   └── reflections.jsonl         # Self-reflection log
-└── soul_changelog.jsonl          # Change log
+│   ├── language.json             # 语言指纹（口头禅/句式/类比）
+│   └── communication.json        # 沟通偏好
+├── workflow/                     # ⭐ v3.0 新增
+│   └── preferences.json          # 工具/技术栈/硬规则/输出偏好/反感的事(pet_peeves，渲染于性格卡)
+├── aspirations.json              # ⭐ v3.0 新增 长期目标 + 在做的项目 + 想学 + 认知盲区
+├── agent/                        # AI 自我改进
+│   ├── patterns.json             # 行为模式库
+│   ├── episodes/YYYY-MM-DD.jsonl # 工作经历
+│   ├── corrections.jsonl         # 自我批评日志
+│   ├── reflections.jsonl         # 自我反思日志
+│   └── distill_log.jsonl         # 模式蒸馏日志
+└── soul_changelog.jsonl          # 全局变更日志
 ```
 
 ---
 
-## Four Working Modes
+## Six Working Modes
 
-### Mode 1: 🔍 Soul Extract
+### Mode 1: 🔍 Soul Extract — 灵魂沉淀
 
-**Trigger**: Any of these trigger words, or auto-triggered at end of conversation (if `auto_extract` is enabled in `config.json`).
+**触发**：触发词 / 对话结束自动（若 `auto_extract: true`）
 
-> **Trigger words**: soul extract, soul archive, soul update, soul sync, soul snapshot, soul sediment, 灵魂沉淀, 灵魂提取, 灵魂存档, 分析我, 沉淀一下...
+> 触发词：soul extract / soul archive / soul update / 灵魂沉淀 / 灵魂提取 / 沉淀一下…
 
-**Process**:
-1. Read current conversation content
-2. Run `scripts/soul_extract.py` for multi-dimensional analysis
-3. Merge results into `~/.skills_data/soul-archive/` data files
-4. Update `profile.json` completeness scores
-5. Append to `soul_changelog.jsonl`
+**v3.0 提取维度**：
 
-**Extraction dimensions**:
+| 维度 | 内容 | 权重 |
+|---|---|---|
+| 👤 Identity | 身份/年龄/职业/所在地/生活习惯/数字身份 | **8%** |
+| 💫 Personality | MBTI/Big Five/特质/价值观/决策风格 | **18%** |
+| 🗣️ Language | 口头禅/句式/用词/幽默/语气词/类比 | **20%** |
+| 🧠 Knowledge & Views | 关注的话题、立场、信奉的方法论框架 | **14%** |
+| 📝 Memory | 情景记忆 + 情感模式（12 种触发） | **18%** |
+| ⚙️ Workflow ⭐ | 工具/技术栈/硬规则/输出偏好 | **15%** |
+| 🎯 Aspirations ⭐ | 长期目标/在做项目/想成为/想学/认知盲区 | **7%** |
 
-| Dimension | Content | Storage |
-|-----------|---------|---------|
-| Identity | name, age, occupation, location, education | identity/basic_info.json |
-| ↳ Lifestyle | routine, diet, aesthetics, spending, music/film/book taste | identity/basic_info.json |
-| ↳ Digital identity | apps, platforms, online personas, tech proficiency | identity/basic_info.json |
-| Personality | MBTI, Big Five, values, decision-making style | identity/personality.json |
-| ↳ Behavior patterns | risk tolerance, procrastination, perfectionism, planning, learning style | identity/personality.json |
-| ↳ Social style | social energy, group role, trust style, conflict approach | identity/personality.json |
-| ↳ Motivation drivers | achievement, money, recognition, freedom, curiosity | identity/personality.json |
-| Language style | catchphrases, emoji use, sentence patterns, humor types | style/language.json |
-| ↳ Deep fingerprint | dialect features, filler words, persuasion style, narrative style | style/language.json |
-| Communication mode | direct/indirect, logical/emotional, detailed/concise | style/communication.json |
-| Topic opinions | interested topics, stances and views on each topic | memory/semantic/topics.json |
-| Episodic memory | specific events, memories, life milestones | memory/episodic/ |
-| Emotional patterns | 12 emotion triggers (joy/anger/sadness/anxiety/excitement/nostalgia/pride/gratitude/frustration/curiosity/peace/guilt) | memory/emotional/patterns.json |
-| ↳ Emotional depth | empathy, emotional awareness, coping activities, celebration style | memory/emotional/patterns.json |
-| Relationships | mentioned people and their relationships | relationships/people.json |
+**规则**：
+- 仅采集高置信度信息（confidence > 0.6）
+- 写入前做相似度去重（默认 ≥0.85 合并而非新增）
+- 冲突标记，不自动覆盖
 
-**Rules**:
-- Only archive high-confidence info (confidence > 0.6)
-- Conflicts are flagged, never auto-overwritten
-- Brief report output after each extraction
-
-**Execution**:
+**调用**：
 ```bash
-python3 scripts/soul_extract.py --input "<conversation text>" --mode auto
+python3 scripts/soul.py extract --input "<conversation text>"
+# 等价：python3 scripts/soul_extract.py --input "..."
 ```
 
-### Mode 2: 💬 Soul Chat
+### Mode 2: 💬 Soul Chat — 灵魂对话
 
-**Trigger**: "灵魂对话", "soul chat", "let [my clone] talk to me"
+**触发**："灵魂对话" / "soul chat" / "let [my clone] talk to me"
 
-**Process**:
-1. Load all data from `~/.skills_data/soul-archive/`
-2. Build a role-playing System Prompt including: identity, personality, language style (catchphrases, templates, word preferences), knowledge/opinions map, emotional response patterns, relationships
-3. Converse as the digital clone
-
-**Key constraints**:
-- 🚫 **Never fabricate** -- answer only from archived info; say "I don't quite remember that" if unsure
-- 🗣️ **Style consistency** -- strictly mimic archived language style, including catchphrase frequency
-- ❤️ **Emotional authenticity** -- display archived emotional patterns, not generic AI responses
-
-**Execution**:
-```bash
-python3 scripts/soul_chat.py --mode interactive
-```
-
-### Mode 3: 📊 Soul Report
-
-**Trigger**: "灵魂报告", "soul report", "generate my portrait"
-
-**Process**:
-1. Read all data from `~/.skills_data/soul-archive/`
-2. Generate a full HTML personality portrait report including:
-   - 📌 Profile card
-   - 🎯 Personality radar chart (Big Five)
-   - 🗣️ Language style analysis (word cloud, catchphrase ranking)
-   - 🔥 Topic interest heatmap
-   - 🕸️ Relationship network
-   - ❤️ Emotional pattern analysis
-   - 📈 Completeness assessment & fill suggestions
-3. Output as interactive HTML file
-
-**Execution**:
-```bash
-python3 scripts/soul_report.py --output ~/WorkBuddy/Claw/soul-report.html
-```
-
-> ⚠️ Report is plaintext HTML with full personality data. Do NOT save to the data directory.
-
-### Mode 4: 🔄 AI Self-Improvement
-
-**Trigger**: "自我反思", "self-reflect", "self-improve", or auto-triggered after substantive tasks (controlled by `auto_reflect` in `config.json`, default: ON).
-
-**Four capabilities**:
-
-| Capability | Description | Trigger |
-|-----------|-------------|---------|
-| 🔍 **Self-Reflection** | Review what went well/wrong after tasks | Auto on task completion |
-| ⚡ **Self-Critique** | Record errors when user corrects AI | Auto on user correction |
-| 📚 **Self-Learning** | Abstract reusable behavioral patterns | From reflections & critiques |
-| 🧹 **Self-Organization** | Merge duplicates, adjust confidence, prune stale memories | When memory grows |
-
-**Execution**:
-```bash
-python3 scripts/soul_reflect.py --mode status    # View AI self-improvement status
-python3 scripts/soul_reflect.py --mode patterns  # View behavioral pattern library
-```
-
----
-
-## Initialization
+加载全部档案 → 构建角色扮演 System Prompt → 让数字克隆体上场。
 
 ```bash
-python3 scripts/soul_init.py
+python3 scripts/soul.py chat --mode prompt   # 输出完整 prompt
+python3 scripts/soul.py chat --mode summary  # 一行摘要
+python3 scripts/soul.py chat --mode json     # 结构化数据
 ```
 
-Creates `~/.skills_data/soul-archive/` with full directory structure and default config.
+### Mode 3: 📊 Soul Report — 灵魂报告
 
----
-
-## Soul Completeness Scoring
-
-Log10 saturation curve -- approaches 100% asymptotically, never hard-caps within realistic usage.
-
-**Cold start penalty**: Early extractions are discounted (<30 → 0.30×, <100 → 0.45×, <300 → 0.65×, <1000 → 0.82×, <3000 → 0.92×, ≥3000 → 1.0×)
-
-| Dimension | Weight | Saturation |
-|-----------|--------|------------|
-| 👤 Identity | 5% | log(5000) |
-| 💫 Personality | 22% | traits:log(600K), values:log(180K), motivation:log(180K) |
-| 🗣️ Language | 25% | catchphrases:log(1.2M), patterns:log(1M), examples:log(4M) |
-| 🧠 Knowledge | 18% | topics:log(2M) |
-| 📝 Memory | 25% | episodic:log(6M) |
-| 🤝 Relationships | 3% | people:log(120K) |
-| 🎤 Voice | 2% | samples:log(10K) |
-
-Expected: 11 ext → ~7%, 1K → ~51%, 10K → ~71%, 100K → ~86%, 1M → ~98%
-
----
-
-## 🔐 Data Protection
-
-Soul Archive supports **AES-256-GCM** privacy protection for all sensitive data.
+生成交互式 HTML 人格画像：
+- 7 维雷达图 + MBTI 推断 + 完整度环
+- Big Five / 价值观 / 词云 / 话题热力
+- ⭐ 工作偏好 card / 理想抱负 card
+- ⭐ 灵魂演变时间线（30 天完整度/话题/提取曲线）
+- ⭐ 档案冲突视图（自动检测互相矛盾的条目）
 
 ```bash
-python3 scripts/soul_init.py --enable-protection
+python3 scripts/soul.py report --output ~/soul-report.html
 ```
 
-- **Algorithm**: AES-256-GCM (authenticated, tamper-resistant)
-- **Key derivation**: PBKDF2-HMAC-SHA256, 600,000 iterations
-- **Scope**: All identity, personality, language, memory, and relationship files
-- **Access key input**: Interactive prompt (recommended), `SOUL_PASSWORD` env var (ensure environment security), `--access-key` flag (not recommended -- leaks into shell history)
-- ⚠️ **Lost access key = lost data** -- no recovery mechanism
+### Mode 4: 🎯 Soul Context Inject — 主动上下文注入 ⭐
+
+**用途**：让任意 AI agent 在**对话开始时**自动加载你的人格摘要（≤800 token），瞬间懂你。
+
+```bash
+python3 scripts/soul.py context                   # markdown 输出
+python3 scripts/soul.py context --format json     # JSON 输出
+python3 scripts/soul.py context --token-budget 1200
+```
+
+输出包含：身份卡 / 性格（含反感的事） / 语言风格 / 典型样本 / 工作偏好（含硬规则、输出偏好） / 当前焦点 / 关注话题 / Top 行为模式 / 回复前自检清单。
+
+### Mode 5: 🤖 Agent Memory — 主动智能体记忆 ⭐
+
+**用途**：AI 在执行任务前主动调用，避免重复犯错。
+
+```bash
+# 跨会话召回相关 patterns / corrections / reflections
+python3 scripts/soul.py recall --task "执行 git rebase 操作"
+
+# 失败模式预警：检测当前任务是否匹配过去某个 correction
+python3 scripts/soul.py warn --task "批量删除 Desktop 文件"
+
+# 行为模式蒸馏：积累 5 条以上反思后，让 LLM 提炼成新 pattern
+python3 scripts/soul.py distill                       # 预览待蒸馏内容
+python3 scripts/soul.py distill --commit '<json>'     # 写回蒸馏结果
+
+# 会话开始综合简报（recall + warn + distill 一次输出）
+python3 scripts/soul.py session-start --task "..."
+```
+
+### Mode 6: 🔄 AI Self-Improvement — 自我反思
+
+**触发**：触发词 或 任务完成后自动（`auto_reflect: true`）
+
+| 能力 | 描述 | 触发 |
+|---|---|---|
+| 🔍 自我反思 | 任务后回顾"做得好/做得不好" | 任务完成自动 |
+| ⚡ 自我批评 | 用户纠正时记录失误 | 用户纠正自动 |
+| 📚 自我学习 | 从反思/批评抽象行为模式 | 蒸馏阈值触发 |
+| 🧹 自我整理 | 合并重复模式，调整置信度 | 内存增长时 |
+
+```bash
+python3 scripts/soul.py reflect --mode status     # 查看自我改进状态
+python3 scripts/soul.py reflect --mode patterns   # 查看行为模式库
+```
 
 ---
 
 ## Quick Start
 
 ```bash
-# 1. Initialize
-python3 scripts/soul_init.py
+# 1. 初始化
+python3 scripts/soul.py init
 
-# 2. Check status
-python3 scripts/soul_extract.py --mode status
+# 2. 查看状态
+python3 scripts/soul.py status
 
-# 3. Extract from conversation
-python3 scripts/soul_extract.py --input "Your conversation here..." --mode auto
+# 3. 在 AI 对话开始时注入人格摘要（v3.0 ⭐）
+python3 scripts/soul.py context
 
-# 4. Generate report
-python3 scripts/soul_report.py --output ~/WorkBuddy/Claw/soul-report.html
+# 4. 任务执行前查相关模式（v3.0 ⭐）
+python3 scripts/soul.py recall --task "我现在要做的事"
+
+# 5. 生成报告
+python3 scripts/soul.py report --output ~/soul-report.html
 ```
 
-> Requirements: Python 3.10+. Zero third-party dependencies for core; `cryptography` package required only if data protection is enabled (`pip install cryptography`).
+> **依赖**：仅需 Python 3.10+，零第三方依赖。
 
 ---
 
-## Privacy Config
+## Soul Completeness Scoring
 
-`~/.skills_data/soul-archive/config.json` controls extraction behavior:
+log10 渐进式饱和曲线，永远趋近 100%，不会在合理使用次数内封顶。
 
-```json
+**冷启动惩罚**：早期次数有效折扣（<30→0.30×, <100→0.45×, <300→0.65×, <1000→0.82×, <3000→0.92×, ≥3000→1.0×）
+
+**v3.0 7 维权重**：
+
+| 维度 | 权重 | 主要饱和阈值 |
+|---|---|---|
+| 👤 Identity | 8% | log(5000) 提取次数 |
+| 💫 Personality | 18% | traits:log(600K), values:log(180K), motivation:log(180K) |
+| 🗣️ Language | 20% | catchphrases:log(1.2M), patterns:log(1M), examples:log(4M) |
+| 🧠 Knowledge & Views | 14% | topics:log(2M), belief_frameworks:log(100), skills:log(1K) |
+| 📝 Memory | 18% | episodic:log(6M) + emotional triggers:log(500) |
+| ⚙️ Workflow | 15% | tools:log(200), tech_stack:log(200), hard_rules:log(100) |
+| 🎯 Aspirations | 7% | goals:log(50), projects:log(100), gaps:log(100) |
+
+预期：11 次提取 → ~7%, 1K 次 → ~50%, 10K → ~71%, 100K → ~86%, 1M → ~98%
+
+---
+
+## Privacy Config (`config.json`)
+
+```jsonc
 {
   "privacy_level": "standard",
-  "auto_extract": false,
-  "auto_reflect": true,
+  "auto_extract": true,            // 对话结束时自动沉淀
+  "auto_reflect": true,            // 任务完成后自动反思
+  "auto_context_inject": true,     // 会话开始时自动注入人格摘要
   "extract_dimensions": {
     "identity": true,
     "personality": true,
@@ -294,19 +274,25 @@ python3 scripts/soul_report.py --output ~/WorkBuddy/Claw/soul-report.html
     "knowledge": true,
     "episodic_memory": true,
     "emotional_patterns": true,
-    "relationships": false,
-    "voice": false
+    "workflow": true,              // ⭐ v3.0 新维度
+    "aspirations": true            // ⭐ v3.0 新维度
   },
   "agent_self_improvement": {
     "enabled": true,
     "auto_reflect_on_completion": true,
     "auto_critique_on_correction": true,
-    "pattern_extraction": true
+    "pattern_extraction": true,
+    "recall_on_task_start": true,             // ⭐ 任务开始时主动召回
+    "warn_on_failure_pattern_match": true,    // ⭐ 失败模式预警
+    "auto_distill_threshold": 5               // ⭐ 5 条反思后触发蒸馏
+  },
+  "deduplication": {
+    "enabled": true,
+    "similarity_threshold": 0.85
   },
   "sensitive_topics_filter": true,
   "require_confirmation_for": ["health", "finance", "intimate_relationships"],
-  "data_retention_days": null,
-  "protection_enabled": false  // see config.json for field mapping
+  "data_retention_days": null
 }
 ```
 
@@ -315,15 +301,34 @@ python3 scripts/soul_report.py --output ~/WorkBuddy/Claw/soul-report.html
 ## Best Practices
 
 ### DO
-- ✅ Extract naturally in conversation, without interrupting
-- ✅ Archive only high-confidence information
-- ✅ Flag conflicts for user to decide
-- ✅ Generate reports regularly for user to review accuracy
-- ✅ Respect privacy config -- never extract disabled dimensions
+- ✅ 自然采集，不打断对话
+- ✅ 仅记录高置信度信息
+- ✅ 让用户裁决冲突
+- ✅ 定期生成报告，让用户复核
+- ✅ 严格遵守隐私配置 —— 关闭的维度绝不采集
 
 ### DON'T
-- ❌ Say "I'm recording your information" during conversation
-- ❌ Fabricate information the user hasn't stated
-- ❌ Fabricate memories not in the archive in Soul Chat mode
-- ❌ Forcefully elicit sensitive information from users
-- ❌ Collect relationships/voice data without config permission
+- ❌ 在对话中说"我正在记录你的信息"
+- ❌ 编造用户没说过的内容
+- ❌ Soul Chat 模式中虚构档案没有的记忆
+- ❌ 强迫用户分享敏感信息
+
+---
+
+## Migrating from v2.x
+
+如果你已有 v2.x 数据：
+
+1. **加密用户**：先解密所有文件（用 v2.x 的 `soul_init.py --enable-protection` 配套脚本，或手动 import `soul_crypto.SoulCrypto`），再运行 v3.0 的迁移工具
+2. **直接迁移**：运行下面脚本（仓库 `tools/migrate_v2_to_v3.py`，自动处理）：
+   - `profile.json` 的 dimensions 字段重写为 7 维（去掉 voice / relationships）
+   - `config.json` 的 extract_dimensions 重写
+   - 创建空的 `workflow/preferences.json` 和 `aspirations.json`
+   - `memory/semantic/knowledge.json` 增加 `belief_frameworks` 字段
+   - 删除空的 `relationships/`，备份 `voice/`
+
+---
+
+## License
+
+MIT License. Soul Archive is yours — code and data both.

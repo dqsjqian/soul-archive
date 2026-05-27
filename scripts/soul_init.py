@@ -6,6 +6,11 @@ Create ~/.skills_data/soul-archive/ data directory and default configuration fil
 The soul data is stored under the current user's home directory (~/.skills_data/soul-archive/)
 so it can be accessed across different IDEs, AI tools, and workspaces on the same machine.
 
+v3.0+: All data is plaintext JSON. No encryption layer. No voice dimension.
+       7-axis schema (industry-aligned): Identity / Personality / Language /
+       Knowledge / Memory / Workflow / Aspirations.
+       Privacy is enforced by keeping data local and out of any VCS via .gitignore.
+
 Usage:
   python soul_init.py [--soul-dir /custom/path]
   python3 soul_init.py
@@ -14,9 +19,7 @@ Works on: macOS, Linux, Windows
 """
 
 import argparse
-import base64
 import json
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -25,12 +28,10 @@ DEFAULT_SOUL_DIR = Path.home() / ".skills_data" / "soul-archive"
 
 
 def now_iso() -> str:
-    """Current time in ISO 8601 format."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S+00:00")
 
 
 def write_json(path: Path, data: dict):
-    """Write JSON file with UTF-8 encoding."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -40,13 +41,10 @@ def main():
     parser = argparse.ArgumentParser(description="🧬 灵魂存档初始化")
     parser.add_argument("--soul-dir", type=Path, default=DEFAULT_SOUL_DIR,
                         help=f"灵魂数据目录路径（默认: {DEFAULT_SOUL_DIR}）")
-    parser.add_argument("--enable-protection", action="store_true",
-                        help="启用数据保护")
     args = parser.parse_args()
 
     soul_dir = args.soul_dir
 
-    # Check if already initialized
     if (soul_dir / "profile.json").exists():
         print(f"⚠️  灵魂存档已存在于 {soul_dir}")
         print(f"   如需重新初始化，请先删除 {soul_dir} 目录")
@@ -57,24 +55,23 @@ def main():
 
     now = now_iso()
 
-    # Create directory structure
+    # 7-axis schema: identity / personality / language / knowledge /
+    #                memory (episodic+semantic+emotional) / workflow / aspirations
     dirs = [
         soul_dir / "identity",
         soul_dir / "memory" / "episodic",
         soul_dir / "memory" / "semantic",
         soul_dir / "memory" / "emotional",
         soul_dir / "style",
-        soul_dir / "voice" / "samples",
-        soul_dir / "relationships",
+        soul_dir / "workflow",
         soul_dir / "reports",
         soul_dir / "agent" / "episodes",
     ]
     for d in dirs:
         d.mkdir(parents=True, exist_ok=True)
 
-    # profile.json
     write_json(soul_dir / "profile.json", {
-        "soul_version": "1.0",
+        "soul_version": "3.0",
         "created_at": now,
         "last_updated": now,
         "total_conversations": 0,
@@ -86,15 +83,17 @@ def main():
             "language_style": 0.0,
             "knowledge": 0.0,
             "memory": 0.0,
-            "relationships": 0.0,
-            "voice": 0.0
+            "workflow": 0.0,
+            "aspirations": 0.0
         }
     })
 
-    # config.json
+    # config.json — minimal, no encryption fields
     config_data = {
         "privacy_level": "standard",
-        "auto_extract": False,
+        "auto_extract": True,
+        "auto_reflect": True,
+        "auto_context_inject": True,
         "extract_dimensions": {
             "identity": True,
             "personality": True,
@@ -102,52 +101,26 @@ def main():
             "knowledge": True,
             "episodic_memory": True,
             "emotional_patterns": True,
-            "relationships": False,
-            "voice": False
+            "workflow": True,
+            "aspirations": True
         },
-        "sensitive_topics_filter": True,
-        "require_confirmation_for": ["health", "finance", "intimate_relationships"],
-        "data_retention_days": None,
-        "encryption": False,
-        "auto_reflect": True,
         "agent_self_improvement": {
             "enabled": True,
             "auto_reflect_on_completion": True,
             "auto_critique_on_correction": True,
-            "pattern_extraction": True
-        }
+            "pattern_extraction": True,
+            "recall_on_task_start": True,
+            "warn_on_failure_pattern_match": True,
+            "auto_distill_threshold": 5
+        },
+        "deduplication": {
+            "enabled": True,
+            "similarity_threshold": 0.85
+        },
+        "sensitive_topics_filter": True,
+        "require_confirmation_for": ["health", "finance", "intimate_relationships"],
+        "data_retention_days": None
     }
-
-    # Handle data protection setup
-    crypto = None
-    if args.enable_protection:
-        sys.path.insert(0, str(Path(__file__).parent))
-        from soul_crypto import SoulCrypto, prompt_password, protect_data_files, create_verify_file
-
-        print()
-        print("🔐 正在设置数据保护...")
-        print("   ⚠️  请牢记此访问密钥！访问密钥丢失将无法恢复数据，无恢复机制。")
-        print()
-        password = prompt_password(confirm=True)
-
-        salt = SoulCrypto.generate_salt()
-        crypto_inst = SoulCrypto(password, salt)
-
-        # Create protected verification file
-        create_verify_file(soul_dir, crypto_inst)
-
-        config_data["encryption"] = True
-        config_data["encryption_algorithm"] = "AES-256-GCM"
-        config_data["encryption_key_derivation"] = "PBKDF2-SHA256"
-        config_data["encryption_salt"] = base64.b64encode(salt).decode("ascii")
-        config_data["encryption_verify"] = crypto_inst.create_verify_token()
-        crypto = crypto_inst
-    else:
-        # No protection → create plain verification file
-        sys.path.insert(0, str(Path(__file__).parent))
-        from soul_crypto import create_verify_file
-        create_verify_file(soul_dir, crypto=None)
-
     write_json(soul_dir / "config.json", config_data)
 
     # identity/basic_info.json
@@ -218,7 +191,9 @@ def main():
 
     # memory/semantic/knowledge.json
     write_json(soul_dir / "memory" / "semantic" / "knowledge.json", {
-        "domains": [], "skills": [], "expertise_level": {}, "_meta": {}
+        "domains": [], "skills": [], "expertise_level": {},
+        "belief_frameworks": [],   # v3.0：信奉的方法论/思考框架（"第一性原理"、"二八法则"等）
+        "_meta": {}
     })
 
     # memory/emotional/patterns.json
@@ -234,39 +209,53 @@ def main():
         "celebration_style": None, "_meta": {}
     })
 
-    # relationships/people.json
-    write_json(soul_dir / "relationships" / "people.json", {
-        "people": [], "_meta": {}
+    # workflow/preferences.json — v3.0 ⭐ 新增维度
+    write_json(soul_dir / "workflow" / "preferences.json", {
+        "tools": {
+            "ide": [], "terminal": [], "ai_tools": [],
+            "vcs": [], "doc_systems": [], "communication": []
+        },
+        "tech_stack": {
+            "languages": [], "frameworks": [], "platforms": []
+        },
+        "hard_rules": [],            # 用户明示的"必须/禁止"（如"禁止 git rebase"）
+        "collab_conventions": [],    # 审核流程、commit 风格、分享平台等
+        "cli_habits": [],            # 偏好的命令/别名/脚本风格
+        "output_preferences": {      # 输出格式偏好（合并自 ChatGPT custom instructions）
+            "preferred_format": None,    # 表格/列表/段落
+            "preferred_length": None,    # 简短/中等/详尽
+            "preferred_tone": None,      # 直接/温和/活泼
+            "structure_first": None      # 是否要求"结论先行"
+        },
+        "pet_peeves": [],            # 反感的事：被铺垫、冗长解释、AI 自我介绍等
+        "_meta": {}
     })
 
-    # voice/voice_profile.json
-    write_json(soul_dir / "voice" / "voice_profile.json", {
-        "description": None, "pitch": None, "speed": None,
-        "accent": None, "sample_count": 0, "_meta": {}
+    # aspirations.json — v3.0 ⭐ 新增维度
+    write_json(soul_dir / "aspirations.json", {
+        "long_term_goals": [],          # 长期目标：职业、生活、技能
+        "active_projects": [],          # 正在做的项目（含状态/期望）
+        "identity_aspirations": [],     # 想成为什么样的人
+        "skills_to_learn": [],          # 想学但还没学的
+        "knowledge_gaps": [],           # 频繁提问/承认不懂的领域（"认知盲区"）
+        "_meta": {}
     })
 
-    # agent/patterns.json -- AI 自我学习：抽象行为模式
+    # agent/patterns.json — AI 自我学习
     write_json(soul_dir / "agent" / "patterns.json", {
         "patterns": {},
         "_meta": {"description": "AI behavioral patterns learned from experience"}
     })
 
-    # agent/corrections.jsonl -- AI 自我批评日志（空文件）
-    corrections = soul_dir / "agent" / "corrections.jsonl"
-    if not corrections.exists():
-        corrections.touch()
+    for fname in ("corrections.jsonl", "reflections.jsonl"):
+        f = soul_dir / "agent" / fname
+        if not f.exists():
+            f.touch()
 
-    # agent/reflections.jsonl -- AI 自我反思日志（空文件）
-    reflections = soul_dir / "agent" / "reflections.jsonl"
-    if not reflections.exists():
-        reflections.touch()
-
-    # soul_changelog.jsonl (empty)
     changelog = soul_dir / "soul_changelog.jsonl"
     if not changelog.exists():
         changelog.touch()
 
-    # .gitignore
     gitignore = soul_dir / ".gitignore"
     gitignore.write_text(
         "# Soul archive data -- highly private, never commit to VCS\n*\n!.gitignore\n",
@@ -278,23 +267,14 @@ def main():
     print()
     print(f"   📂 数据目录: {soul_dir}")
     print(f"   📋 配置文件: {soul_dir / 'config.json'}")
-    print(f"   🔒 隐私提示: 数据存储在用户主目录下，不会进入任何 git 仓库")
-
-    # Apply privacy protection if enabled
-    if crypto is not None:
-        protected_files = protect_data_files(soul_dir, crypto)
-        if protected_files:
-            print(f"   🔐 数据保护已启用: {len(protected_files)} 个文件已保护 (AES-256-GCM)")
-        else:
-            print(f"   🔐 数据保护已启用: 数据文件将在写入时自动保护")
-    else:
-        print(f"   💡 提示: 可通过 --enable-protection 启用数据保护")
-
+    print(f"   🔒 隐私: 全部本地明文 JSON，不上传任何云端")
+    print(f"   🧬 7 维 schema: identity / personality / language / knowledge / memory / workflow / aspirations")
     print()
     print("   下一步:")
-    print('   1. 开始与 AI 对话，灵魂存档会静默采集你的信息')
-    print('   2. 随时说 "灵魂报告" 查看你的人格画像')
-    print('   3. 说 "灵魂对话" 让你的克隆体跟别人聊天')
+    print('   1. 开始与 AI 对话，灵魂存档会按 auto_extract 配置静默采集')
+    print('   2. 随时说 "灵魂报告" 查看人格画像')
+    print('   3. 说 "灵魂对话" 让克隆体跟别人聊天')
+    print('   4. agent 可调用 soul_context.py 在对话开始时加载人格摘要')
 
 
 if __name__ == "__main__":
