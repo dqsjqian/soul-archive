@@ -6,7 +6,7 @@ AI 自我反思、自我批评、自我学习引擎（写入侧）。
 查询/召回/预警/蒸馏 等"主动智能体记忆"能力请使用 soul_agent_memory.py。
 
 
-默认数据目录：~/.agent-commons/skills_data/soul-archive/（未加入 Agent Commons 时回退到 ~/.skills_data/soul-archive/）（agent/ 子目录）
+默认数据目录：~/.agent-commons/skills_data/soul-archive/（agent/ 子目录）
 
 Usage:
   python3 soul_reflect.py --mode reflect --input "<反思内容>"
@@ -17,6 +17,17 @@ Usage:
 
 Works on: macOS, Linux, Windows
 """
+
+
+# ── Windows console safety: force UTF-8 on stdout/stderr so Chinese / emoji
+#    don't blow up under the default cp936 codec on Windows PowerShell / cmd.
+#    No-op on POSIX terminals that are already UTF-8.
+import sys as _sys
+try:
+    _sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+    _sys.stderr.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+except Exception:
+    pass
 
 import argparse
 import json

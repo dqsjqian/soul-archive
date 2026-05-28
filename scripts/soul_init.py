@@ -3,7 +3,7 @@
 🧬 Soul Archive Initializer (Cross-platform)
 Create the Soul Archive data directory and default configuration files.
 
-The soul data is stored under the current user's home directory (~/.agent-commons/skills_data/soul-archive/ (falls back to ~/.skills_data/soul-archive/ if Agent Commons isn't installed))
+The soul data is stored under the current user's home directory (~/.agent-commons/skills_data/soul-archive/)
 so it can be accessed across different IDEs, AI tools, and workspaces on the same machine.
 
        7-axis schema (industry-aligned): Identity / Personality / Language /
@@ -17,13 +17,24 @@ Usage:
 Works on: macOS, Linux, Windows
 """
 
+
+# ── Windows console safety: force UTF-8 on stdout/stderr so Chinese / emoji
+#    don't blow up under the default cp936 codec on Windows PowerShell / cmd.
+#    No-op on POSIX terminals that are already UTF-8.
+import sys as _sys
+try:
+    _sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+    _sys.stderr.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+except Exception:
+    pass
+
 import argparse
 import json
 from datetime import datetime, timezone
 from pathlib import Path
 
 
-from soul_paths import resolve_soul_dir, detect_legacy_data_to_migrate
+from soul_paths import resolve_soul_dir
 DEFAULT_SOUL_DIR = resolve_soul_dir()
 
 

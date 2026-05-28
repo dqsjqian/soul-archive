@@ -4,13 +4,9 @@ This document covers how to safely back up, sync, or migrate Soul Archive data �
 
 ## Where your data lives
 
-The path is resolved at runtime by [`scripts/soul_paths.py`](../scripts/soul_paths.py):
-
-| Condition | Resolved location |
-|---|---|
-| `~/.agent-commons/` exists (you've joined Agent Commons) | `~/.agent-commons/skills_data/soul-archive/` |
-| Otherwise (standalone use) | `~/.skills_data/soul-archive/` |
-| `--soul-dir` CLI flag or `SOUL_DIR` env var | overrides everything |
+```
+~/.agent-commons/skills_data/soul-archive/
+```
 
 To check the actual path on your machine:
 
@@ -18,11 +14,9 @@ To check the actual path on your machine:
 python scripts/soul_paths.py
 ```
 
-## Recommended sync strategies
+## Recommended sync strategy
 
-### Option A — co-located with Agent Commons (recommended if you use both)
-
-If you have joined the [Agent Commons](https://github.com/dqsjqian/agent-commons) protocol, your soul data lives under `~/.agent-commons/`. You can back up everything as a unit:
+Soul Archive data lives under [Agent Commons](https://github.com/dqsjqian/agent-commons), so backing up the whole tree gives you everything at once:
 
 ```bash
 # Private git on your own server
@@ -32,15 +26,7 @@ cd ~/.agent-commons && git init && git add . && git commit -m "snapshot"
 rsync -avz --delete ~/.agent-commons/ user@host:~/.agent-commons/
 ```
 
-This is the simplest story: **one directory, all your AI agent state**.
-
-### Option B — soul-archive only
-
-If you don't use Agent Commons, sync `~/.skills_data/soul-archive/` directly:
-
-```bash
-rsync -avz --delete ~/.skills_data/soul-archive/ user@host:~/.skills_data/soul-archive/
-```
+One directory, all your AI-agent state.
 
 ## Privacy layering (important)
 
@@ -55,68 +41,34 @@ Soul Archive data has **two sensitivity levels**:
 
 ```gitignore
 # Highly sensitive — keep out of any git history
-memory/episodic/
-memory/emotional/
-agent/corrections.jsonl
-agent/reflections.jsonl
-agent/episodes/
-
-# Encrypted backups (auto-generated)
-*.enc-bak
-
-# OS clutter
-.DS_Store
-```
-
-For Agent Commons users, add the equivalent to your `~/.agent-commons/.gitignore` (or the `.gitignore` of whatever wraps it):
-
-```gitignore
 skills_data/soul-archive/memory/episodic/
 skills_data/soul-archive/memory/emotional/
 skills_data/soul-archive/agent/corrections.jsonl
 skills_data/soul-archive/agent/reflections.jsonl
 skills_data/soul-archive/agent/episodes/
 skills_data/soul-archive/*.enc-bak
+
+# OS clutter
+.DS_Store
 ```
-
-## Migrating between locations
-
-If you started with the legacy path `~/.skills_data/soul-archive/` and have since installed Agent Commons, you can move your data:
-
-```bash
-# See what would happen
-python scripts/soul_migrate.py --dry-run
-
-# Actually migrate (interactive prompt)
-python scripts/soul_migrate.py
-
-# Or non-interactive
-python scripts/soul_migrate.py --yes
-```
-
-The migration:
-- Moves the entire directory (preserves everything: timestamps, encrypted backups, jsonl logs)
-- Leaves a forwarding `README.md` at the legacy location
-- Is reversible via `--rollback`
 
 ## Migrating to a new machine
 
 ```bash
 # On the old machine: pack it up
-cd "$(dirname "$(python scripts/soul_paths.py | grep 'resolved' | awk '{print $NF}')")"
-tar czf soul-backup.tgz "$(python scripts/soul_paths.py | grep 'resolved' | awk '{print $NF}' | xargs basename)"
+tar czf soul-backup.tgz -C ~/.agent-commons skills_data/soul-archive
 
 # Transfer soul-backup.tgz to the new machine.
 
 # On the new machine:
-mkdir -p ~/.agent-commons/skills_data/    # or ~/.skills_data/  if standalone
-tar xzf soul-backup.tgz -C ~/.agent-commons/skills_data/    # adjust target dir to taste
+mkdir -p ~/.agent-commons/skills_data/
+tar xzf soul-backup.tgz -C ~/.agent-commons/
 ```
 
 Or simpler with rsync:
 
 ```bash
-rsync -avz $(python scripts/soul_paths.py | grep resolved | awk '{print $NF}')/ \
+rsync -avz ~/.agent-commons/skills_data/soul-archive/ \
   newhost:~/.agent-commons/skills_data/soul-archive/
 ```
 

@@ -12,8 +12,19 @@ Usage:
   python3 soul_report.py [--output /path/to/report.html] [--lang zh|en]
   python3 soul_report.py --soul-dir /custom/path --output report.html
 
-Default data directory: ~/.agent-commons/skills_data/soul-archive/ (falls back to ~/.skills_data/soul-archive/ if Agent Commons isn't installed) (cross-platform)
+Default data directory: ~/.agent-commons/skills_data/soul-archive/ (cross-platform)
 """
+
+
+# ── Windows console safety: force UTF-8 on stdout/stderr so Chinese / emoji
+#    don't blow up under the default cp936 codec on Windows PowerShell / cmd.
+#    No-op on POSIX terminals that are already UTF-8.
+import sys as _sys
+try:
+    _sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+    _sys.stderr.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+except Exception:
+    pass
 
 import json
 import re

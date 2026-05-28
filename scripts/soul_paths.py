@@ -1,25 +1,26 @@
 #!/usr/bin/env python3
 """
-🧬 Soul Archive — Path Resolver
+🧬 Soul Archive — Path Resolver (with silent auto-migration)
 
 Single source of truth for where Soul Archive data lives.
 
+Public API:
+  resolve_soul_dir(override=None)  → Path     # the canonical entry point
+  get_default_soul_dir()           → Path     # alias
+
 Resolution order (highest to lowest priority):
-  1. Explicit --soul-dir / SOUL_DIR env override (caller's choice)
-  2. NEW: ~/.agent-commons/skills_data/soul-archive/  (if ~/.agent-commons/ exists)
-  3. LEGACY: ~/.skills_data/soul-archive/             (back-compat for existing users)
-  4. NEW (default for fresh installs without agent-commons): ~/.skills_data/soul-archive/
+  1. Explicit `override` argument (e.g. from --soul-dir CLI flag)
+  2. SOUL_DIR environment variable
+  3. ~/.agent-commons/skills_data/soul-archive/   (the canonical location)
 
-Why two locations?
-  - If the user has joined the Agent Commons protocol (https://github.com/dqsjqian/agent-commons),
-    co-locating Soul Archive data under ~/.agent-commons/skills_data/ gives them a single
-    backup root, uniform multi-device sync semantics, and discoverability for other agents.
-  - If the user has NOT joined Agent Commons, falling back to ~/.skills_data/ keeps Soul Archive
-    100% standalone — no implicit dependency on a project the user may not want to use.
+Auto-migration:
+  When `resolve_soul_dir()` is invoked and the canonical location does not yet
+  exist but legacy data is present at ~/.skills_data/soul-archive/, the legacy
+  directory is silently moved into place. This is invisible to callers — they
+  always get the canonical path back.
 
-Migration:
-  Run `python -m soul migrate` (or `python soul_migrate.py`) to move existing data from the
-  legacy location to the new one. The migration is opt-in and reversible.
+  No prompts. No CLI flags to remember. The data simply ends up where it
+  belongs the next time any Soul Archive entry point runs.
 
 This module has zero dependencies beyond stdlib.
 """
@@ -27,29 +28,96 @@ This module has zero dependencies beyond stdlib.
 from __future__ import annotations
 
 import os
+import shutil
 from pathlib import Path
 from typing import Optional
 
 
-# Public path constants ----------------------------------------------------
+# Canonical data location ---------------------------------------------------
 
 AGENT_COMMONS_ROOT = Path.home() / ".agent-commons"
-NEW_SOUL_ROOT = AGENT_COMMONS_ROOT / "skills_data" / "soul-archive"
-LEGACY_SOUL_ROOT = Path.home() / ".skills_data" / "soul-archive"
+SOUL_ROOT = AGENT_COMMONS_ROOT / "skills_data" / "soul-archive"
+
+# Internal: legacy location, used only by the auto-migrator on first run
+# after upgrade. New users / new installs never see this path.
+_LEGACY_SOUL_ROOT = Path.home() / ".skills_data" / "soul-archive"
+
+
+def _silently_migrate_if_needed() -> None:
+    """
+    Best-effort migration from the historical legacy location to the canonical one.
+
+    Conditions to act:
+      - Legacy dir exists AND has profile.json (real data, not an empty placeholder)
+      - Canonical location does NOT yet have profile.json (don't clobber existing)
+      - Legacy and canonical paths are not the same directory (defensive)
+
+    On any error, swallow silently — the user's data is never made worse than it was.
+    Callers always get a usable canonical path back from resolve_soul_dir().
+
+    Cross-platform notes:
+      - Uses pathlib + shutil.move; both work on POSIX and Windows.
+      - shutil.move falls back to copy+remove if os.rename can't do an atomic
+        rename (e.g. across Windows drive letters or POSIX filesystems). This is
+        slower but still correct.
+      - All filesystem errors are caught — never raise to the caller.
+    """
+    try:
+        if not _LEGACY_SOUL_ROOT.exists():
+            return
+        if not (_LEGACY_SOUL_ROOT / "profile.json").exists():
+            return
+        if (SOUL_ROOT / "profile.json").exists():
+            # New location already populated — nothing to do, even if legacy still exists.
+            return
+
+        # Defensive: never move a directory onto itself (e.g. via a SOUL_DIR override).
+        try:
+            if _LEGACY_SOUL_ROOT.resolve() == SOUL_ROOT.resolve():
+                return
+        except OSError:
+            return
+
+        # Make sure the parent of the canonical location exists.
+        SOUL_ROOT.parent.mkdir(parents=True, exist_ok=True)
+
+        # If the canonical dir exists but is empty/partial (no profile.json), get rid of
+        # it so shutil.move can do an in-place rename.
+        if SOUL_ROOT.exists():
+            try:
+                # Only remove if essentially empty — refuse to clobber non-trivial content.
+                contents = list(SOUL_ROOT.iterdir())
+                if not contents:
+                    SOUL_ROOT.rmdir()
+                else:
+                    # Bail — something we don't understand is there. Don't risk data loss.
+                    return
+            except OSError:
+                return
+
+        shutil.move(str(_LEGACY_SOUL_ROOT), str(SOUL_ROOT))
+    except Exception:
+        # Migration is opportunistic. If anything blocks it, fall through and let
+        # resolve_soul_dir() return whatever path makes sense; the user's data is
+        # untouched and the migration can be retried on the next call.
+        pass
 
 
 def resolve_soul_dir(override: Optional[Path] = None) -> Path:
     """
     Resolve the active Soul Archive data directory.
 
-    Order:
-      1. `override` argument (e.g. from --soul-dir CLI flag)
-      2. SOUL_DIR environment variable
-      3. New default ~/.agent-commons/skills_data/soul-archive/  (if ~/.agent-commons/ exists)
-      4. Legacy ~/.skills_data/soul-archive/                     (back-compat)
+    Side effect: on first call after a Soul Archive upgrade where data still lives at
+    the historical ~/.skills_data/soul-archive/ path, this function will silently
+    move it to ~/.agent-commons/skills_data/soul-archive/ before returning.
 
-    Note: this returns the resolved path WHETHER OR NOT it exists. Callers that need the
-    directory present should mkdir it themselves (most scripts already do).
+    Override priority:
+      1. `override` argument
+      2. SOUL_DIR env var
+      3. The canonical location (with silent migration if needed)
+
+    The return value is always a usable directory path (callers may need to mkdir it,
+    but it points at the correct place).
     """
     if override is not None:
         return Path(override).expanduser()
@@ -58,19 +126,9 @@ def resolve_soul_dir(override: Optional[Path] = None) -> Path:
     if env:
         return Path(env).expanduser()
 
-    # If user joined Agent Commons, prefer co-located data
-    if AGENT_COMMONS_ROOT.is_dir():
-        # If the new location has data, definitely use it
-        if NEW_SOUL_ROOT.exists():
-            return NEW_SOUL_ROOT
-        # If legacy has data and new doesn't, stay on legacy until user migrates
-        if LEGACY_SOUL_ROOT.exists():
-            return LEGACY_SOUL_ROOT
-        # Fresh install on a machine that already has agent-commons → use new
-        return NEW_SOUL_ROOT
-
-    # No agent-commons — use legacy path (the historical default)
-    return LEGACY_SOUL_ROOT
+    # Trigger silent migration if applicable, then return canonical location.
+    _silently_migrate_if_needed()
+    return SOUL_ROOT
 
 
 def get_default_soul_dir() -> Path:
@@ -78,7 +136,10 @@ def get_default_soul_dir() -> Path:
     return resolve_soul_dir()
 
 
-def is_co_located_with_agent_commons(soul_dir: Path) -> bool:
+# Internal helpers (kept for diagnostic / legacy callers; not part of the
+# documented user-facing surface)
+
+def _is_co_located_with_agent_commons(soul_dir: Path) -> bool:
     """Check whether the given soul_dir lives under ~/.agent-commons/."""
     try:
         soul_dir.resolve().relative_to(AGENT_COMMONS_ROOT.resolve())
@@ -87,46 +148,16 @@ def is_co_located_with_agent_commons(soul_dir: Path) -> bool:
         return False
 
 
-def detect_legacy_data_to_migrate() -> Optional[Path]:
-    """
-    Return the legacy path if it contains real data AND the new path doesn't yet exist,
-    indicating the user has data they could migrate. Otherwise None.
-    """
-    if not LEGACY_SOUL_ROOT.exists():
-        return None
-    # Check the legacy dir actually has profile.json (not just an empty dir)
-    if not (LEGACY_SOUL_ROOT / "profile.json").exists():
-        return None
-    # If new location is already populated, nothing to do
-    if (NEW_SOUL_ROOT / "profile.json").exists():
-        return None
-    # If user hasn't joined agent-commons yet, don't push migration on them
-    if not AGENT_COMMONS_ROOT.is_dir():
-        return None
-    return LEGACY_SOUL_ROOT
-
-
 __all__ = [
-    "AGENT_COMMONS_ROOT",
-    "NEW_SOUL_ROOT",
-    "LEGACY_SOUL_ROOT",
+    "SOUL_ROOT",
     "resolve_soul_dir",
     "get_default_soul_dir",
-    "is_co_located_with_agent_commons",
-    "detect_legacy_data_to_migrate",
 ]
 
 
 if __name__ == "__main__":
-    # Diagnostic mode — print where data WOULD live right now
-    print("🧬 Soul Archive — path resolver diagnostic")
-    print(f"  $HOME                            = {Path.home()}")
-    print(f"  ~/.agent-commons/                exists = {AGENT_COMMONS_ROOT.is_dir()}")
-    print(f"  ~/.skills_data/soul-archive/     exists = {LEGACY_SOUL_ROOT.exists()}")
-    print(f"  ~/.agent-commons/skills_data/... exists = {NEW_SOUL_ROOT.exists()}")
-    print()
-    print(f"  resolved soul_dir = {resolve_soul_dir()}")
-    legacy = detect_legacy_data_to_migrate()
-    if legacy:
-        print(f"  ⚠️  legacy data ready to migrate from: {legacy}")
-        print(f"     → run: python -m scripts.soul_migrate")
+    # Diagnostic mode — show where data ends up after any silent migration.
+    print("🧬 Soul Archive — path resolver")
+    print(f"  $HOME                = {Path.home()}")
+    print(f"  resolved soul_dir    = {resolve_soul_dir()}")
+    print(f"  exists?              = {resolve_soul_dir().exists()}")

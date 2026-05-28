@@ -8,8 +8,19 @@
   python3 soul_chat.py --mode prompt
   python3 soul_chat.py --soul-dir /custom/path --mode summary
 
-默认数据目录：~/.agent-commons/skills_data/soul-archive/（未加入 Agent Commons 时回退到 ~/.skills_data/soul-archive/）（跨平台兼容）
+默认数据目录：~/.agent-commons/skills_data/soul-archive/（跨平台兼容）
 """
+
+
+# ── Windows console safety: force UTF-8 on stdout/stderr so Chinese / emoji
+#    don't blow up under the default cp936 codec on Windows PowerShell / cmd.
+#    No-op on POSIX terminals that are already UTF-8.
+import sys as _sys
+try:
+    _sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+    _sys.stderr.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+except Exception:
+    pass
 
 import json
 import sys

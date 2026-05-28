@@ -19,6 +19,17 @@
   python3 soul_context.py --no-patterns         # 不附带行为模式
 """
 
+
+# ── Windows console safety: force UTF-8 on stdout/stderr so Chinese / emoji
+#    don't blow up under the default cp936 codec on Windows PowerShell / cmd.
+#    No-op on POSIX terminals that are already UTF-8.
+import sys as _sys
+try:
+    _sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+    _sys.stderr.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+except Exception:
+    pass
+
 import argparse
 import json
 import sys

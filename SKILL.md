@@ -3,9 +3,7 @@ name: soul-archive
 description: "Soul Archive — A digital personality persistence system + agentic memory. Builds your digital soul clone through everyday AI conversations, with proactive context injection, cross-session recall, failure-pattern warning, and pattern distillation. All data stored locally as plaintext JSON. Six modes: Soul Extract, Soul Chat, Soul Report, Soul Context Inject, Agent Memory Recall, AI Self-Improvement. | 灵魂存档 ---- 通过日常 AI 对话构建数字人格克隆体 + 主动智能体记忆。支持自动 hook、对话开始时主动注入人格摘要、跨会话召回、失败模式预警、行为模式蒸馏。数据全部本地明文 JSON。六大模式：灵魂沉淀、灵魂对话、灵魂报告、上下文注入、智能体记忆召回、AI 自我改进。Trigger words: soul extract, soul archive, soul update, soul chat, soul report, soul context, soul recall, soul warn, self-reflect, self-improve, learn from mistakes, 灵魂沉淀, 灵魂提取, 灵魂存档, 灵魂报告, 灵魂对话, 自我反思, 自我批评, 自我学习."
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob
 # ^^^ 工具说明：Read/Write/Edit 用于读写数据文件；Bash 用于执行 Python 脚本；
-# Grep/Glob 用于文件搜索。数据目录由 scripts/soul_paths.py 解析：
-# 如果用户已加入 Agent Commons 协议（~/.agent-commons/ 存在），优先用
-# ~/.agent-commons/skills_data/soul-archive/；否则回退 ~/.skills_data/soul-archive/。
+# Grep/Glob 用于文件搜索。数据目录默认为 ~/.agent-commons/skills_data/soul-archive/，
 # 用户可通过 --soul-dir 或 SOUL_DIR 环境变量自定义。
 requirements:
   - "Python 3.10+"
@@ -35,7 +33,7 @@ Soul Archive 是一个**数字人格持久化 + 主动智能体记忆**系统。
 ## Core Principles
 
 ### 🔒 Privacy First
-- 全部数据存在本地（默认 `~/.agent-commons/skills_data/soul-archive/`，未加入 Agent Commons 时回退到 `~/.skills_data/soul-archive/`），**不上传任何云端**
+- 全部数据存在 `~/.agent-commons/skills_data/soul-archive/`，**不上传任何云端**
 - 全部明文 JSON。`.gitignore` 拦截 VCS 提交。
 - **Soul Chat 流向**：基于本地档案构建 prompt，是否被外部 LLM 看到，取决于你的 agent/平台配置。
 - 通过 `config.json` 细粒度控制每个维度的开关。
@@ -58,19 +56,11 @@ Soul Archive 是一个**数字人格持久化 + 主动智能体记忆**系统。
 ## Architecture: Skill ↔ Data Separation
 
 ```
-{SKILL_DIR}/                                          ← Skill 引擎（本仓库）
-~/.agent-commons/skills_data/soul-archive/            ← 你的灵魂数据（推荐位置 — 已加入 Agent Commons 时）
-~/.skills_data/soul-archive/                          ← 你的灵魂数据（回退位置 — 未加入 Agent Commons 时）
+{SKILL_DIR}/                                 ← Skill 引擎（本仓库）
+~/.agent-commons/skills_data/soul-archive/   ← 你的灵魂数据
 ```
 
-数据放在用户主目录，所以同机器上任何 IDE / AI 工具 / Workspace 都能访问同一份灵魂。
-
-**为什么有两个位置？**
-- 如果你已加入 [Agent Commons](https://github.com/dqsjqian/agent-commons) 协议（`~/.agent-commons/` 存在），把灵魂数据放在它的 `skills_data/` 子目录下，可以让你**用一份备份/同步策略管所有 AI agent 数据**。
-- 如果你没用 Agent Commons，soul-archive 仍 100% 独立工作 —— 不会强迫你装协议。
-- 已有老用户从老路径无缝迁移：跑 `python scripts/soul_migrate.py` 即可。
-
-路径解析逻辑由 [`scripts/soul_paths.py`](scripts/soul_paths.py) 统一管理。
+数据放在 [Agent Commons](https://github.com/dqsjqian/agent-commons) 共享目录的 skills_data 下，所以同机器上任何 IDE / AI 工具 / Workspace 都能访问同一份灵魂；备份/迁移时整个 `~/.agent-commons/` 一并带走即可。
 
 ---
 
