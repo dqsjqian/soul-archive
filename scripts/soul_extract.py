@@ -16,7 +16,7 @@
   python3 soul_extract.py --input "对话内容"
   python3 soul_extract.py --mode status
 
-默认数据目录：~/.skills_data/soul-archive/
+默认数据目录：~/.agent-commons/skills_data/soul-archive/（未加入 Agent Commons 时回退到 ~/.skills_data/soul-archive/）
 """
 
 import json
@@ -1104,7 +1104,8 @@ class ExtractionBuilder:
 # ============================================================
 
 def main():
-    default_soul_dir = str(Path.home() / ".skills_data" / "soul-archive")
+    from soul_paths import resolve_soul_dir
+    default_soul_dir = str(resolve_soul_dir())
     parser = argparse.ArgumentParser(description="🧬 灵魂提取器")
     parser.add_argument("--soul-dir", default=default_soul_dir,
                         help=f"灵魂数据目录路径（默认: {default_soul_dir}）")

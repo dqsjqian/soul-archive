@@ -271,7 +271,8 @@ def build_context_json(soul_dir: Path) -> dict:
 
 
 def main():
-    default_soul_dir = Path.home() / ".skills_data" / "soul-archive"
+    from soul_paths import resolve_soul_dir
+    default_soul_dir = resolve_soul_dir()
     parser = argparse.ArgumentParser(description="🧬 Soul Context Injector — 主动介入用的精简人格摘要")
     parser.add_argument("--soul-dir", type=Path, default=default_soul_dir,
                         help=f"灵魂数据目录（默认: {default_soul_dir}）")

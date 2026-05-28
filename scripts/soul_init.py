@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
 🧬 Soul Archive Initializer (Cross-platform)
-Create ~/.skills_data/soul-archive/ data directory and default configuration files.
+Create the Soul Archive data directory and default configuration files.
 
-The soul data is stored under the current user's home directory (~/.skills_data/soul-archive/)
+The soul data is stored under the current user's home directory (~/.agent-commons/skills_data/soul-archive/ (falls back to ~/.skills_data/soul-archive/ if Agent Commons isn't installed))
 so it can be accessed across different IDEs, AI tools, and workspaces on the same machine.
 
        7-axis schema (industry-aligned): Identity / Personality / Language /
@@ -23,7 +23,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
-DEFAULT_SOUL_DIR = Path.home() / ".skills_data" / "soul-archive"
+from soul_paths import resolve_soul_dir, detect_legacy_data_to_migrate
+DEFAULT_SOUL_DIR = resolve_soul_dir()
 
 
 def now_iso() -> str:

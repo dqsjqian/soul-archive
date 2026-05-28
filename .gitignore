@@ -26,6 +26,7 @@ Thumbs.db
 
 # Soul data (private! never commit)
 .skills_data/
+.agent-commons/skills_data/
 *.soul.bak
 
 # Logs

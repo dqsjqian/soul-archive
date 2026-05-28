@@ -59,7 +59,7 @@ HELP = """🧬 Soul Archive — Unified CLI
   session-start      会话开始综合简报：recall + warn + distill（--task "..."）
 
 通用参数（所有子命令）：
-  --soul-dir <path>  自定义灵魂数据目录（默认 ~/.skills_data/soul-archive）
+  --soul-dir <path>  自定义灵魂数据目录（默认 ~/.agent-commons/skills_data/soul-archive/，未加入 Agent Commons 时回退到 ~/.skills_data/soul-archive/）
 """
 
 

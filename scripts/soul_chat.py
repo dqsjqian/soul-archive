@@ -8,7 +8,7 @@
   python3 soul_chat.py --mode prompt
   python3 soul_chat.py --soul-dir /custom/path --mode summary
 
-默认数据目录：~/.skills_data/soul-archive/（通过 Path.home() 解析，跨平台兼容）
+默认数据目录：~/.agent-commons/skills_data/soul-archive/（未加入 Agent Commons 时回退到 ~/.skills_data/soul-archive/）（跨平台兼容）
 """
 
 import json
@@ -413,7 +413,8 @@ def build_soul_summary(archive: SoulArchive) -> str:
 
 
 def main():
-    default_soul_dir = str(Path.home() / ".skills_data" / "soul-archive")
+    from soul_paths import resolve_soul_dir
+    default_soul_dir = str(resolve_soul_dir())
     parser = argparse.ArgumentParser(description="🧬 灵魂对话引擎")
     parser.add_argument("--soul-dir", default=default_soul_dir,
                         help=f"灵魂数据目录路径（默认: {default_soul_dir}）")

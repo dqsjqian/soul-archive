@@ -14,7 +14,7 @@ It builds a **digital soul clone** of you through everyday AI conversations, and
 
 ## Design Principles
 
-- 🔒 **Local-first** — data lives in `~/.skills_data/soul-archive/`, never uploaded
+- 🔒 **Local-first** — data lives in `~/.agent-commons/skills_data/soul-archive/` (or `~/.skills_data/soul-archive/` if you don't use Agent Commons), never uploaded
 - 📂 **Readable & editable** — plaintext JSON, open and edit anytime
 - 🤖 **Active companion** — the AI extracts and recalls automatically as you chat
 - 🎯 **Single-user simplicity** — one user, one machine, one soul
@@ -72,13 +72,13 @@ python3 scripts/soul.py report --output ~/soul-report.html
 
 ```
 {SKILL_DIR}/                  ← Skill engine
-~/.skills_data/soul-archive/  ← Your soul data, local-only
+<soul_dir>/  ← Your soul data (resolved by scripts/soul_paths.py — see SKILL.md)
 ```
 
 The skill is the engine; the soul data lives in your home directory so any IDE / AI tool / workspace on the same machine can access the same soul.
 
 ```
-~/.skills_data/soul-archive/
+<soul_dir>/
 ├── profile.json
 ├── config.json
 ├── identity/{basic_info,personality}.json
@@ -95,7 +95,7 @@ The skill is the engine; the soul data lives in your home directory so any IDE /
 
 ## Privacy
 
-- Data lives in `~/.skills_data/soul-archive/`, plaintext JSON, **never uploaded**.
+- Data lives locally (preferred: `~/.agent-commons/skills_data/soul-archive/`; fallback: `~/.skills_data/soul-archive/`), plaintext JSON, **never uploaded**.
 - The data directory has a `.gitignore` that blocks accidental commits.
 - Soul Chat builds prompts locally; whether they're sent to an external LLM depends on **your** agent / platform.
 - Sensitive topics (health / finance / intimate relationships) require explicit confirmation by default.

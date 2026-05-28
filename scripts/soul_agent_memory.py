@@ -239,7 +239,8 @@ def session_start_briefing(soul_dir: Path, task: str) -> dict:
 # ---------- CLI ----------
 
 def main():
-    default_soul_dir = Path.home() / ".skills_data" / "soul-archive"
+    from soul_paths import resolve_soul_dir
+    default_soul_dir = resolve_soul_dir()
     parser = argparse.ArgumentParser(description="🧬 Soul Agent Memory — 主动智能体记忆")
     parser.add_argument("--soul-dir", type=Path, default=default_soul_dir)
     sub = parser.add_subparsers(dest="cmd", required=True)

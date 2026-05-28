@@ -12,7 +12,7 @@ Usage:
   python3 soul_report.py [--output /path/to/report.html] [--lang zh|en]
   python3 soul_report.py --soul-dir /custom/path --output report.html
 
-Default data directory: ~/.skills_data/soul-archive/ (resolved via Path.home(), cross-platform)
+Default data directory: ~/.agent-commons/skills_data/soul-archive/ (falls back to ~/.skills_data/soul-archive/ if Agent Commons isn't installed) (cross-platform)
 """
 
 import json
@@ -158,7 +158,7 @@ I18N = {
         "conflict_empty": "✅ 暂无冲突，灵魂档案保持一致",
         "conflict_field": "字段",
         "conflict_values": "冲突值",
-        "conflict_hint": "命令行执行：编辑 ~/.skills_data/soul-archive/ 下对应的 JSON 文件即可裁决",
+        "conflict_hint": "命令行执行：编辑灵魂数据目录下对应的 JSON 文件即可裁决（路径由 soul_paths.resolve_soul_dir() 决定）",
     },
     "en": {
         "html_lang": "en",
@@ -287,7 +287,7 @@ I18N = {
         "conflict_empty": "✅ No conflicts. Your soul archive is internally consistent.",
         "conflict_field": "Field",
         "conflict_values": "Conflicting Values",
-        "conflict_hint": "Resolve by editing the corresponding JSON file under ~/.skills_data/soul-archive/",
+        "conflict_hint": "Resolve by editing the corresponding JSON file under the resolved soul-archive directory (see soul_paths.resolve_soul_dir())",
     }
 }
 
@@ -1733,7 +1733,8 @@ if (conflicts.length) {{
 
 
 def main():
-    default_soul_dir = str(Path.home() / ".skills_data" / "soul-archive")
+    from soul_paths import resolve_soul_dir
+    default_soul_dir = str(resolve_soul_dir())
     parser = argparse.ArgumentParser(description="🧬 Soul Report Generator (Multi-language)")
     parser.add_argument("--soul-dir", default=default_soul_dir,
                         help=f"Soul data directory path (default: {default_soul_dir})")
