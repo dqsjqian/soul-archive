@@ -1,10 +1,10 @@
-# 灵魂提取 Prompt 模板 (v3.0 · 7-axis schema)
+# 灵魂提取 Prompt 模板
 
 ## 对话分析提取 Prompt
 
 分析以下对话内容，提取用户的人格信息。只提取你有把握的信息（置信度 > 0.6），不要猜测或编造。
 
-### v3.0 提取维度（7 axes）
+### 提取维度（7 axes）
 
 请按以下格式输出 JSON，**只**包含本次对话中**新发现**的信息：
 
@@ -76,7 +76,7 @@
     "coping_mechanisms":  ["..."]
   },
 
-  // 6. 工作偏好 ⭐ v3.0 新维度
+  // 6. 工作偏好
   "workflow": {
     "tools": {
       "ide":           ["Cursor", "VS Code", "Xcode"],
@@ -103,11 +103,11 @@
     "pet_peeves": ["反感冗长解释", "反感铺垫'好的我来帮你'"]
   },
 
-  // 7. 理想抱负 ⭐ v3.0 新维度
+  // 7. 理想抱负
   "aspirations": {
     "long_term_goals":      ["做一个独立开发者"],
     "active_projects": [
-      { "name": "soul-archive", "status": "活跃，正在做 v3.0", "expectation": "发布到 GitHub" }
+      { "name": "soul-archive", "status": "活跃迭代中", "expectation": "发布到 GitHub" }
     ],
     "identity_aspirations": ["成为兼具技术与产品视野的资深工程师"],
     "skills_to_learn":      ["Rust 异步编程"],

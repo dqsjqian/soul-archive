@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-🧬 Soul Agent Memory (v3.0, P0-3)
+🧬 Soul Agent Memory
 
 主动智能体记忆引擎。soul_reflect.py 是写入侧；本模块是「主动召回 + 主动预警 + 主动蒸馏」侧。
 

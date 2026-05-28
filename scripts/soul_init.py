@@ -6,7 +6,6 @@ Create ~/.skills_data/soul-archive/ data directory and default configuration fil
 The soul data is stored under the current user's home directory (~/.skills_data/soul-archive/)
 so it can be accessed across different IDEs, AI tools, and workspaces on the same machine.
 
-v3.0+: All data is plaintext JSON. No encryption layer. No voice dimension.
        7-axis schema (industry-aligned): Identity / Personality / Language /
        Knowledge / Memory / Workflow / Aspirations.
        Privacy is enforced by keeping data local and out of any VCS via .gitignore.
@@ -192,7 +191,7 @@ def main():
     # memory/semantic/knowledge.json
     write_json(soul_dir / "memory" / "semantic" / "knowledge.json", {
         "domains": [], "skills": [], "expertise_level": {},
-        "belief_frameworks": [],   # v3.0：信奉的方法论/思考框架（"第一性原理"、"二八法则"等）
+        "belief_frameworks": [],   # 信奉的方法论/思考框架
         "_meta": {}
     })
 
@@ -209,7 +208,7 @@ def main():
         "celebration_style": None, "_meta": {}
     })
 
-    # workflow/preferences.json — v3.0 ⭐ 新增维度
+    # workflow/preferences.json
     write_json(soul_dir / "workflow" / "preferences.json", {
         "tools": {
             "ide": [], "terminal": [], "ai_tools": [],
@@ -231,7 +230,7 @@ def main():
         "_meta": {}
     })
 
-    # aspirations.json — v3.0 ⭐ 新增维度
+    # aspirations.json
     write_json(soul_dir / "aspirations.json", {
         "long_term_goals": [],          # 长期目标：职业、生活、技能
         "active_projects": [],          # 正在做的项目（含状态/期望）

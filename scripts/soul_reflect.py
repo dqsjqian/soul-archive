@@ -5,7 +5,6 @@
 AI 自我反思、自我批评、自我学习引擎（写入侧）。
 查询/召回/预警/蒸馏 等"主动智能体记忆"能力请使用 soul_agent_memory.py。
 
-v3.0：移除加密层，全部明文 JSON。
 
 默认数据目录：~/.skills_data/soul-archive/agent/
 

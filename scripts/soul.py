@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-🧬 Soul Archive — Unified CLI Entry (v3.0)
+🧬 Soul Archive — Unified CLI Entry
 
 统一的子命令路由，让你少记 6 个脚本名。
 
@@ -43,7 +43,7 @@ SCRIPTS = {
 }
 
 
-HELP = """🧬 Soul Archive — Unified CLI (v3.0)
+HELP = """🧬 Soul Archive — Unified CLI
 
 子命令：
   init               初始化灵魂存档

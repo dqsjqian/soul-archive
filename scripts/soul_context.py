@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-🧬 Soul Context Injector (v3.0)
+🧬 Soul Context Injector
 
-P0-2 主动介入：在每个 AI agent 会话开始时，
+主动介入：在每个 AI agent 会话开始时，
 注入一份精简的人格摘要 + 关键行为模式提醒，
 让 agent 的回复风格立即与"档案里的你"对齐。
 
@@ -102,7 +102,7 @@ def build_context_block(soul_dir: Path, token_budget: int = 800,
         ex_short = [f"> {e}" for e in examples[:3]]
         examples_block = "**典型说话样本**：\n" + "\n".join(ex_short)
 
-    # --- Workflow（v3.0 ⭐ 关键："AI 立刻能用"的部分）---
+    # --- Workflow ---
     wf_lines = []
     op = workflow.get("output_preferences") or {}
     op_parts = []

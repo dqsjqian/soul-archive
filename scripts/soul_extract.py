@@ -2,7 +2,7 @@
 """
 🧬 灵魂提取器（Soul Extractor）
 
-v3.0 关键变化：
+
 - 移除 voice 维度
 - 移除 relationships 维度（AI 对话中难以采集）
 - 移除加密层（全部明文 JSON）
@@ -124,7 +124,7 @@ DEFAULT_EMOTIONAL_PATTERNS = {
     "celebration_style": None, "_meta": {}
 }
 
-# v3.0 ⭐ 新增：Workflow（procedural memory）
+# Workflow（procedural memory）
 DEFAULT_WORKFLOW = {
     "tools": {
         "ide": [], "terminal": [], "ai_tools": [],
@@ -146,7 +146,7 @@ DEFAULT_WORKFLOW = {
     "_meta": {}
 }
 
-# v3.0 ⭐ 新增：Aspirations
+# Aspirations
 DEFAULT_ASPIRATIONS = {
     "long_term_goals": [],
     "active_projects": [],
@@ -241,7 +241,7 @@ def now_iso():
 
 
 # ============================================================
-# Similarity-based dedup (v3.0 P1-4)
+# Similarity-based dedup
 # ============================================================
 
 def _similarity(a: str, b: str) -> float:
@@ -448,7 +448,7 @@ class SoulArchive:
                 "changes": changes,
                 "summary": extraction.get("summary", ""),
                 "completeness": profile["completeness_score"],
-                "dimensions": dimensions   # v3.0：快照各维度分数，给"灵魂演变堆叠图"用
+                "dimensions": dimensions   # 快照各维度分数
             })
         return changes
 
@@ -615,7 +615,7 @@ class SoulArchive:
         return updated
 
     def _merge_workflow(self, current: dict, new_data: dict, thr: float) -> list:
-        """Merge workflow preferences (v3.0 ⭐)"""
+        """Merge workflow preferences"""
         updated = []
         # tools
         if isinstance(new_data.get("tools"), dict):
@@ -653,7 +653,7 @@ class SoulArchive:
         return updated
 
     def _merge_aspirations(self, current: dict, new_data: dict, thr: float) -> list:
-        """Merge aspirations (v3.0 ⭐)"""
+        """Merge aspirations"""
         updated = []
         for key in ("long_term_goals", "active_projects", "identity_aspirations",
                     "skills_to_learn", "knowledge_gaps"):
@@ -687,7 +687,7 @@ class SoulArchive:
         return updated
 
     # --------------------------------------------------------
-    # Completeness scoring (v3.0 7-axis weights)
+    # Completeness scoring (7-axis weights)
     # --------------------------------------------------------
 
     @staticmethod
@@ -713,7 +713,7 @@ class SoulArchive:
             return 0.92
         return 1.0
 
-    # v3.0 7-axis weights (industry-aligned)
+    # 7-axis weights
     DIM_WEIGHTS = {
         "identity":       0.08,
         "personality":    0.18,
@@ -865,7 +865,7 @@ class SoulArchive:
         completeness = self._calc_completeness()
 
         lines = [
-            "🧬 灵魂存档状态报告 (v3.0 · 7-axis)",
+            "🧬 灵魂存档状态报告 (7-axis)",
             "━━━━━━━━━━━━━━━━━━━━━━━━",
             f"总完整度: {completeness:.1%}",
             f"总提取次数: {profile.get('total_extractions', 0)}",
@@ -893,7 +893,7 @@ class SoulArchive:
 
 
 # ============================================================
-# ExtractionBuilder (v3.0)
+# ExtractionBuilder
 # ============================================================
 
 class ExtractionBuilder:
@@ -1105,7 +1105,7 @@ class ExtractionBuilder:
 
 def main():
     default_soul_dir = str(Path.home() / ".skills_data" / "soul-archive")
-    parser = argparse.ArgumentParser(description="🧬 灵魂提取器 (v3.0)")
+    parser = argparse.ArgumentParser(description="🧬 灵魂提取器")
     parser.add_argument("--soul-dir", default=default_soul_dir,
                         help=f"灵魂数据目录路径（默认: {default_soul_dir}）")
     parser.add_argument("--input", help="对话内容（纯文本，直接传入）")

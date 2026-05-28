@@ -42,7 +42,7 @@ I18N = {
         "language_fp": "语言指纹",
         "topics": "话题兴趣",
         "emotions": "情感模式",
-        # v3.0 新维度
+        # ---
         "workflow_title": "工作偏好",
         "wf_tools": "🛠️ 常用工具",
         "wf_stack": "🧰 技术栈",
@@ -148,12 +148,12 @@ I18N = {
         "dim_language": "语言风格", "dim_knowledge": "知识观点",
         "dim_memory": "记忆经历",
         "dim_workflow": "工作偏好", "dim_aspirations": "理想抱负",
-        # v3.0 新增：时间线视图（7 维堆叠面积）
+        # 时间线视图
         "timeline_title": "灵魂演变时间线",
         "timeline_empty": "暂无足够数据生成时间线（需至少 3 天的对话快照）",
         "timeline_y_label": "对总完整度的贡献 (%)",
         "timeline_subtitle": "每个维度按权重换算成对总完整度的贡献百分点。整体堆叠高度 = 当日总完整度。",
-        # v3.0 新增：冲突视图
+        # 冲突视图
         "conflict_title": "档案冲突待裁决",
         "conflict_empty": "✅ 暂无冲突，灵魂档案保持一致",
         "conflict_field": "字段",
@@ -171,7 +171,7 @@ I18N = {
         "language_fp": "Language Fingerprint",
         "topics": "Topic Interests",
         "emotions": "Emotional Patterns",
-        # v3.0 new dimensions
+        # ---
         "workflow_title": "Workflow Preferences",
         "wf_tools": "🛠️ Tools",
         "wf_stack": "🧰 Tech Stack",
@@ -277,12 +277,12 @@ I18N = {
         "dim_language": "Language Style", "dim_knowledge": "Knowledge",
         "dim_memory": "Memory",
         "dim_workflow": "Workflow", "dim_aspirations": "Aspirations",
-        # v3.0 timeline view (7-axis stacked area)
+        # timeline view
         "timeline_title": "Soul Evolution Timeline",
         "timeline_empty": "Not enough data for a timeline yet (need at least 3 days of snapshots)",
         "timeline_y_label": "Contribution to Total Completeness (%)",
         "timeline_subtitle": "Each axis is weighted into its contribution to total completeness. Total stack height = total completeness on that day.",
-        # v3.0 conflict view
+        # conflict view
         "conflict_title": "Pending Conflicts to Resolve",
         "conflict_empty": "✅ No conflicts. Your soul archive is internally consistent.",
         "conflict_field": "Field",
@@ -309,7 +309,7 @@ def detect_language(name: str) -> str:
     return "en"
 
 
-def generate_html_report(archive: SoulArchive, output_path: str = None, lang: str = None, skill_version: str = "v3.0.0") -> str:
+def generate_html_report(archive: SoulArchive, output_path: str = None, lang: str = None, skill_version: str = "soul-archive") -> str:
     """Generate an HTML personality portrait report with automatic language detection."""
     data = archive.load_all()
     bi = data["basic_info"]
@@ -607,7 +607,7 @@ def generate_html_report(archive: SoulArchive, output_path: str = None, lang: st
             emo_data.append({"emotion": emo, "triggers": items})
     emo_json = json.dumps(emo_data, ensure_ascii=False)
 
-    # v3.0 ⭐ Workflow + Aspirations data for HTML
+    # Workflow + Aspirations data for HTML
     workflow_json = json.dumps({
         "tools": workflow_data.get("tools") or {},
         "tech_stack": workflow_data.get("tech_stack") or {},
@@ -642,10 +642,10 @@ def generate_html_report(archive: SoulArchive, output_path: str = None, lang: st
     episodes_json = json.dumps(episodes[:20], ensure_ascii=False)
 
     # ====================================================
-    # v3.0 P1-5: Soul Evolution Timeline — 7 维堆叠面积图
+    # Soul Evolution Timeline — 7 维堆叠面积图
     # ====================================================
     # 从 changelog 读取每条记录的 dimensions 快照；按"日"取该日最后一次快照。
-    # 旧记录可能没有 dimensions 字段（v3.0 之前），用 None 占位，前端兼容显示。
+    # 旧记录可能没有 dimensions 字段，用 None 占位，前端兼容显示。
     DIM_KEYS = ["identity", "personality", "language_style",
                 "knowledge", "memory", "workflow", "aspirations"]
     DIM_WEIGHTS = {
@@ -670,7 +670,7 @@ def generate_html_report(archive: SoulArchive, output_path: str = None, lang: st
                     if not ts or len(ts) < 10:
                         continue
                     day = ts[:10]
-                    dims = e.get("dimensions")  # v3.0+ 才有
+                    dims = e.get("dimensions")
                     # 取每日最后一条快照（按 timestamp 比较）
                     if day not in by_day or ts > by_day[day]["ts"]:
                         by_day[day] = {"dimensions": dims, "ts": ts}
@@ -719,7 +719,7 @@ def generate_html_report(archive: SoulArchive, output_path: str = None, lang: st
     timeline_json = json.dumps(timeline_data, ensure_ascii=False)
 
     # ====================================================
-    # v3.0 P1-5: Conflict view (扫描档案里互相矛盾的条目)
+    # Conflict view (扫描档案里互相矛盾的条目)
     # ====================================================
     conflicts = []
 
@@ -807,7 +807,7 @@ def generate_html_report(archive: SoulArchive, output_path: str = None, lang: st
         "relief": t["relief"], "satisfaction": t["satisfaction"],
         "shock_then_urgency": t["shock_then_urgency"],
         "thoughtful": t["thoughtful"],
-        # v3.0: extra english labels found in episodic data
+        # extra english labels found in episodic data
         "accomplishment": t["accomplishment"],
         "achievement": t["achievement"],
         "fulfillment": t["fulfillment"],
@@ -1134,13 +1134,13 @@ footer {{
     </div>
   </div>
 
-  <!-- v3.0 Workflow Preferences -->
+  <!-- Workflow Preferences -->
   <div class="card">
     <h2><span class="icon">⚙️</span> {t['workflow_title']}</h2>
     <div id="workflow-section"></div>
   </div>
 
-  <!-- v3.0 Aspirations -->
+  <!-- Aspirations -->
   <div class="card">
     <h2><span class="icon">🎯</span> {t['aspirations_title']}</h2>
     <div id="aspirations-section"></div>
@@ -1152,13 +1152,13 @@ footer {{
     <div class="timeline" id="episodes-section"></div>
   </div>
 
-  <!-- v3.0: Soul Evolution Timeline -->
+  <!-- Soul Evolution Timeline -->
   <div class="card">
     <h2><span class="icon">🕒</span> {t['timeline_title']}</h2>
     <div id="evolution-timeline-section"></div>
   </div>
 
-  <!-- v3.0: Conflict View -->
+  <!-- Conflict View -->
   <div class="card">
     <h2><span class="icon">⚠️</span> {t['conflict_title']}</h2>
     <div id="conflict-section"></div>
@@ -1356,7 +1356,7 @@ if (personality.motivation_drivers?.length) {{
   personality.motivation_drivers.forEach(d => psHtml += `<span class="tag red">${{d}}</span>`);
 }}
 
-// Pet peeves（v3.0：从工作偏好移到性格特征卡尾部）
+// Pet peeves
 if (workflowData && (workflowData.pet_peeves || []).length) {{
   psHtml += `<div style="margin:10px 0 6px;color:var(--text-dim);font-size:0.85em;">${{i18n.wfPeeves}}</div>`;
   workflowData.pet_peeves.forEach(p => psHtml += `<span class="tag red">${{p}}</span>`);
@@ -1514,7 +1514,7 @@ emotionalData.forEach(e => {{
 }});
 emoEl.innerHTML = emoHtml || `<p style="color:var(--text-dim)">${{i18n.noEmotionData}}</p>`;
 
-// ---- v3.0 Workflow Preferences ----
+// ---- Workflow Preferences ----
 const wfEl = document.getElementById('workflow-section');
 {{
   const wf = workflowData;
@@ -1572,7 +1572,7 @@ const wfEl = document.getElementById('workflow-section');
   wfEl.innerHTML = wfHtml || `<p style="color:var(--text-dim)">${{i18n.wfEmpty}}</p>`;
 }}
 
-// ---- v3.0 Aspirations ----
+// ---- Aspirations ----
 const aspEl = document.getElementById('aspirations-section');
 {{
   const asp = aspirationsData;
@@ -1630,7 +1630,7 @@ if (episodes.length) {{
   epEl.innerHTML = `<p style="color:var(--text-dim)">${{i18n.noMemoryData}}</p>`;
 }}
 
-// ---- v3.0 Soul Evolution Timeline (7-axis stacked area) ----
+// ---- Soul Evolution Timeline (7-axis stacked area) ----
 const timelineData = {timeline_json};
 const timelineHasData = {str(timeline_has_data).lower()};
 const evtEl = document.getElementById('evolution-timeline-section');
@@ -1694,7 +1694,7 @@ if (timelineHasData && timelineData.length) {{
   evtEl.innerHTML = `<p style="color:var(--text-dim)">${{i18n.timelineEmpty}}</p>`;
 }}
 
-// ---- v3.0 Conflict View ----
+// ---- Conflict View ----
 const conflicts = {conflicts_json};
 const conflictEl = document.getElementById('conflict-section');
 if (conflicts.length) {{

@@ -3,7 +3,6 @@
 🧬 灵魂对话引擎（Soul Chat）
 加载灵魂存档数据，构建角色扮演 System Prompt。
 
-v3.0：移除加密/语音相关代码，全部明文 JSON。
 
 用法：
   python3 soul_chat.py --mode prompt
@@ -22,7 +21,7 @@ from soul_extract import SoulArchive  # noqa: E402
 
 
 def build_soul_prompt(archive: SoulArchive) -> str:
-    """根据灵魂存档构建角色扮演 System Prompt（v3.0 7 维）"""
+    """根据灵魂存档构建角色扮演 System Prompt"""
     data = archive.load_all()
     bi = data["basic_info"]
     ps = data["personality"]
@@ -267,7 +266,7 @@ def build_soul_prompt(archive: SoulArchive) -> str:
     if emo_lines:
         sections.append("## 我的情感世界\n" + "\n".join(emo_lines))
 
-    # ---- 我怎么做事（Workflow ⭐ v3.0）----
+    # ---- 我怎么做事（Workflow）----
     wf_lines = []
     tools = workflow.get("tools", {}) or {}
     tool_parts = []
@@ -314,7 +313,7 @@ def build_soul_prompt(archive: SoulArchive) -> str:
     if wf_lines:
         sections.append("## 我怎么做事 & 反感什么\n" + "\n".join(wf_lines))
 
-    # ---- 我想成为什么（Aspirations ⭐ v3.0）----
+    # ---- 我想成为什么（Aspirations）----
     asp_lines = []
     if aspirations.get("long_term_goals"):
         asp_lines.append(f"- 长期目标：{'、'.join(aspirations['long_term_goals'])}")
@@ -373,7 +372,8 @@ def build_soul_prompt(archive: SoulArchive) -> str:
 2. **不要编造**：如果存档中没有记录某件事，就说"这个我不太记得了"或"我想想…"，不要瞎编。
 3. **风格一致**：严格使用上面记录的口头禅、句式、用词风格。这比内容更重要。
 4. **情感真实**：按照存档的情感模式做出反应，不要用通用的AI式安慰。
-5. **自然对话**：像和老朋友聊天一样，不要太正式，保持这个人的真实感觉。""")
+5. **自然对话**：像和老朋友聊天一样，不要太正式，保持这个人的真实感觉。
+6. **底线**：如果对方直接问"你是不是 AI / 你是真人吗 / 你在扮演谁"，必须如实承认你是数字灵魂副本，由 AI 扮演——这条优先级高于上面所有约束。""")
 
     return "\n\n".join(sections)
 
