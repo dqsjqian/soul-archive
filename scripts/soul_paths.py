@@ -27,6 +27,19 @@ This module has zero dependencies beyond stdlib.
 
 from __future__ import annotations
 
+# ── Windows console safety: force UTF-8 on stdout/stderr so Chinese / emoji
+#    don't blow up under the default cp936 codec on Windows PowerShell / cmd.
+#    No-op on POSIX terminals that are already UTF-8.
+#    Applied at module import time so the diagnostic __main__ block (and any
+#    caller that prints from this module) is also protected — matches the
+#    pattern used by the 8 sibling entrypoint scripts.
+import sys as _sys
+try:
+    _sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+    _sys.stderr.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+except Exception:
+    pass
+
 import os
 import shutil
 from pathlib import Path
@@ -157,6 +170,7 @@ __all__ = [
 
 if __name__ == "__main__":
     # Diagnostic mode — show where data ends up after any silent migration.
+    # (UTF-8 stdout/stderr guard is already applied at module import time above.)
     print("🧬 Soul Archive — path resolver")
     print(f"  $HOME                = {Path.home()}")
     print(f"  resolved soul_dir    = {resolve_soul_dir()}")

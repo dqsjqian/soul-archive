@@ -31,7 +31,7 @@ try:
 except Exception:
     pass
 
-import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -99,7 +99,12 @@ def main():
         sys.exit(1)
 
     cmd = [sys.executable, str(target)] + prefix + rest
-    os.execvp(cmd[0], cmd)
+    # Use subprocess.run instead of os.execvp:
+    #   On Windows (especially Git Bash / MSYS), os.execvp does not reliably
+    #   propagate the child's stdout back to the parent shell — subcommands
+    #   like `soul status` produced no output despite exit code 0.
+    #   subprocess.run keeps the file descriptors stable across platforms.
+    sys.exit(subprocess.run(cmd).returncode)
 
 
 if __name__ == "__main__":
