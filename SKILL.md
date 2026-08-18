@@ -1,6 +1,9 @@
 ---
 name: soul-archive
-description: "Soul Archive — A digital personality persistence system + agentic memory. Builds your digital soul clone through everyday AI conversations, with proactive context injection, cross-session recall, failure-pattern warning, and pattern distillation. All data stored locally as plaintext JSON. Six modes: Soul Extract, Soul Chat, Soul Report, Soul Context Inject, Agent Memory Recall, AI Self-Improvement. | 灵魂存档 ---- 通过日常 AI 对话构建数字人格克隆体 + 主动智能体记忆。支持自动 hook、对话开始时主动注入人格摘要、跨会话召回、失败模式预警、行为模式蒸馏。数据全部本地明文 JSON。六大模式：灵魂沉淀、灵魂对话、灵魂报告、上下文注入、智能体记忆召回、AI 自我改进。Trigger words: soul extract, soul archive, soul update, soul chat, soul report, soul context, soul recall, soul warn, self-reflect, self-improve, learn from mistakes, 灵魂沉淀, 灵魂提取, 灵魂存档, 灵魂报告, 灵魂对话, 自我反思, 自我批评, 自我学习."
+slug: soul-archive
+displayName: 灵魂存档 (Soul Archive)
+version: 3.2.0
+description: "Soul Archive — A digital personality persistence system + agentic memory. Builds your digital soul clone through everyday AI conversations, with proactive context injection, cross-session recall, failure-pattern warning, and pattern distillation. All data stored locally as plaintext JSON. Six modes: Soul Extract, Soul Chat, Soul Report, Soul Context Inject, Agent Memory Recall, AI Self-Improvement. | 灵魂存档 —— 通过日常 AI 对话构建数字人格克隆体 + 主动智能体记忆。支持自动 hook、对话开始时主动注入人格摘要、跨会话召回、失败模式预警、行为模式蒸馏。数据全部本地明文 JSON。六大模式：灵魂沉淀、灵魂对话、灵魂报告、上下文注入、智能体记忆召回、AI 自我改进。Trigger words: soul extract, soul chat, soul report, soul context, soul recall, self-reflect, self-improve, 灵魂沉淀, 灵魂提取, 灵魂存档, 灵魂报告, 自我反思, 自我批评."
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob
 # ^^^ 工具说明：Read/Write/Edit 用于读写数据文件；Bash 用于执行 Python 脚本；
 # Grep/Glob 用于文件搜索。数据目录默认为 ~/.agent-guild/skills_data/soul-archive/，
