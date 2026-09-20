@@ -2,8 +2,13 @@
 name: soul-archive
 slug: soul-archive
 displayName: 灵魂存档 (Soul Archive)
-version: 3.2.1
-description: "Soul Archive — A digital personality persistence system + agentic memory. Builds your digital soul clone through everyday AI conversations, with proactive context injection, cross-session recall, failure-pattern warning, and pattern distillation. All data stored locally as plaintext JSON. Six modes: Soul Extract, Soul Chat, Soul Report, Soul Context Inject, Agent Memory Recall, AI Self-Improvement. | 灵魂存档 —— 通过日常 AI 对话构建数字人格克隆体 + 主动智能体记忆。支持对话结束自动沉淀（auto_extract 默认开启）、对话开始时主动注入人格摘要、跨会话召回、失败模式预警、行为模式蒸馏。数据全部本地明文 JSON。六大模式：灵魂沉淀、灵魂对话、灵魂报告、上下文注入、智能体记忆召回、AI 自我改进。Trigger words: soul extract, soul chat, soul report, soul context, soul recall, self-reflect, self-improve, 灵魂沉淀, 灵魂提取, 灵魂存档, 灵魂报告, 自我反思, 自我批评."
+display_name: 灵魂存档 (Soul Archive)
+display_name_en: Soul Archive
+version: 3.2.2
+author: dqsjqian
+description: "Soul Archive — digital personality persistence + agentic memory. Builds your digital soul clone through everyday AI conversations: persona injection at session start, cross-session recall, failure-pattern warning, pattern distillation. Conversation-end auto sedimentation (auto_extract defaults ON). All data local plaintext JSON. | 灵魂存档 —— 数字人格持久化 + 主动智能体记忆。对话开始注入人格摘要、跨会话召回、失败预警、模式蒸馏；对话结束自动沉淀。数据全本地明文 JSON。Trigger: soul extract/chat/report, 灵魂沉淀/存档, 自我反思."
+description_zh: "灵魂存档 —— 数字人格持久化系统 + 主动智能体记忆。通过日常 AI 对话沉淀说话习惯、知识观点、性格特征、工作偏好与情景记忆，构建数字灵魂副本。对话开始注入人格摘要（≤800 token）、跨会话召回、失败模式预警、行为模式蒸馏；对话结束自动沉淀（auto_extract 默认开启）。数据全部本地明文 JSON，不上传云端，细粒度隐私开关。"
+description_en: "Soul Archive — digital personality persistence + agentic memory. Builds your digital soul clone through everyday AI conversations: speech habits, knowledge, personality, workflow preferences, episodic memories. Persona injection at session start (under 800 tokens), cross-session recall, failure-pattern warning, behavior-pattern distillation; conversation-end auto sedimentation (auto_extract defaults ON). All data local plaintext JSON, never uploaded, fine-grained privacy switches."
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob
 # ^^^ 工具说明：Read/Write/Edit 用于读写数据文件；Bash 用于执行 Python 脚本；
 # Grep/Glob 用于文件搜索。数据目录默认为 ~/.agent-guild/skills_data/soul-archive/，
